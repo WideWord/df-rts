@@ -1,13 +1,13 @@
 extern crate glium;
 
-use glium::glutin::{EventsLoop, WindowBuilder, ContextBuilder, Event, WindowEvent};
-use glium::{Surface, Display};
+use glium::glutin::{EventsLoop, Event, WindowEvent};
+use ::gfx::Renderer;
 use std::rc::Rc;
 use std::cell::RefCell;
 
 pub struct MainLoop {
 	events_loop: Rc<RefCell<EventsLoop>>,
-	display: glium::Display,
+	renderer: Renderer,
 	running: bool,
 }
 
@@ -17,43 +17,42 @@ impl MainLoop {
 
 		let events_loop = Rc::new(RefCell::new(EventsLoop::new()));
 
-		let window = WindowBuilder::new();
-
-		let context = ContextBuilder::new();
-
-		let display = Display::new(window, context, &events_loop.borrow_mut()).unwrap();
+		let renderer = Renderer::new(&events_loop.borrow_mut());
 
 		return MainLoop {
 			events_loop: events_loop,
-			display: display,
+			renderer: renderer,
 			running: true
 		}	
 	}
 
 	pub fn run(&mut self) {
 		while self.running {
-
-			let events_loop = self.events_loop.clone();
-
-			events_loop.borrow_mut().poll_events(|ev| {
-				match ev {
-					Event::WindowEvent { event, .. } => match event {
-						WindowEvent::Closed => self.quit(),
-						_ => (),
-					},
-					_ => (),
-				}
-			});
-
-			let mut target = self.display.draw();
-
-			target.clear_color(0.0, 0.0, 1.0, 1.0);
-			target.finish().unwrap();
+			self.process_events();
+			self.renderer.render();
 		}
 	}
 
 	pub fn quit(&mut self) {
 		self.running = false
+	}
+
+	fn process_events(&mut self) {
+		let events_loop = self.events_loop.clone();
+
+		events_loop.borrow_mut().poll_events(|event| {
+			self.process_event(event);
+		});
+	}
+
+	fn process_event(&mut self, event: Event) {
+		match event {
+			Event::WindowEvent { event, .. } => match event {
+				WindowEvent::Closed => self.quit(),
+				_ => (),
+			},
+			_ => (),
+		}
 	}
 
 }
