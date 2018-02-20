@@ -6,3 +6,4 @@ authors = ["Kirill Vilkov <wide.wrd@gmail.com>"]
 [dependencies]
 glium = "*"
 cgmath = "*"
+image = "*"

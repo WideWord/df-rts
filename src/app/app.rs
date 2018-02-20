@@ -1,28 +1,35 @@
-extern crate glium;
-
 use glium::glutin::{EventsLoop, Event, WindowEvent};
-use ::gfx::Renderer;
+
 use std::rc::Rc;
 use std::cell::RefCell;
 
-pub struct MainLoop {
+use ::gfx::Renderer;
+use ::assets::AssetsManager;
+
+pub struct App {
 	events_loop: Rc<RefCell<EventsLoop>>,
-	renderer: Renderer,
 	running: bool,
+
+	renderer: Rc<Renderer>,
+	assets_manager: Rc<AssetsManager>,
 }
 
-impl MainLoop {
+impl App {
 
 	pub fn new() -> Self {
 
 		let events_loop = Rc::new(RefCell::new(EventsLoop::new()));
 
-		let renderer = Renderer::new(&events_loop.borrow_mut());
+		let renderer = Rc::new(Renderer::new(&events_loop.borrow_mut()));
 
-		return MainLoop {
+		let assets_manager = Rc::new(AssetsManager::new(renderer.clone()));
+
+		App {
 			events_loop: events_loop,
+			running: true,
+
 			renderer: renderer,
-			running: true
+			assets_manager: assets_manager,
 		}	
 	}
 

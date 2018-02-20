@@ -23,6 +23,10 @@ impl Renderer {
 		}
 	}
 
+	pub fn get_display(&self) -> &Display {
+		&self.display
+	}
+
 	pub fn render(&self) {
 		let mut target = self.display.draw();
 

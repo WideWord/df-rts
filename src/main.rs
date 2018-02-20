@@ -1,11 +1,13 @@
 extern crate glium;
+extern crate image;
 
 mod app;
 mod gfx;
+mod assets;
 
-use app::MainLoop;
+use app::App;
 
 fn main() {
-	let mut main_loop = MainLoop::new();
-	main_loop.run();
+	let mut app = App::new();
+	app.run();
 }
