@@ -1,7 +1,7 @@
 extern crate glium;
 
-use glium::glutin;
-use glium::Surface;
+use glium::glutin::{EventsLoop, Windowbuilder, ContextBuilder, Event, WindowEvent};
+use glium::{Surface, Display};
 use std::rc::Rc;
 use std::cell::RefCell;
 
@@ -15,13 +15,13 @@ impl MainLoop {
 
 	pub fn new() -> Self {
 
-		let events_loop = Rc::new(RefCell::new(glutin::EventsLoop::new()));
+		let events_loop = Rc::new(RefCell::new(EventsLoop::new()));
 
-		let window = glutin::WindowBuilder::new();
+		let window = WindowBuilder::new();
 
-		let context = glutin::ContextBuilder::new();
+		let context = ContextBuilder::new();
 
-		let display = glium::Display::new(window, context, &events_loop.borrow_mut()).unwrap();
+		let display = Display::new(window, context, &events_loop.borrow_mut()).unwrap();
 
 		return MainLoop {
 			events_loop: events_loop,
@@ -37,8 +37,8 @@ impl MainLoop {
 
 			events_loop.borrow_mut().poll_events(|ev| {
 				match ev {
-					glutin::Event::WindowEvent { event, .. } => match event {
-						glutin::WindowEvent::Closed => self.quit(),
+					Event::WindowEvent { event, .. } => match event {
+						WindowEvent::Closed => self.quit(),
 						_ => (),
 					},
 					_ => (),
