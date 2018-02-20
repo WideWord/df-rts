@@ -1,0 +1,8 @@
+[package]
+name = "df-rts"
+version = "0.1.0"
+authors = ["Kirill Vilkov <wide.wrd@gmail.com>"]
+
+[dependencies]
+glium = "*"
+cgmath = "*"
