@@ -1,12 +1,12 @@
 extern crate glium;
 
-use glium::glutin::{EventsLoop, Windowbuilder, ContextBuilder, Event, WindowEvent};
+use glium::glutin::{EventsLoop, WindowBuilder, ContextBuilder, Event, WindowEvent};
 use glium::{Surface, Display};
 use std::rc::Rc;
 use std::cell::RefCell;
 
 pub struct MainLoop {
-	events_loop: Rc<RefCell<glutin::EventsLoop>>,
+	events_loop: Rc<RefCell<EventsLoop>>,
 	display: glium::Display,
 	running: bool,
 }
