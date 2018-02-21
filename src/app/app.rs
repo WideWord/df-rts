@@ -1,4 +1,5 @@
 use glium::glutin::{EventsLoop, Event, WindowEvent};
+use cgmath::{vec3};
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -44,9 +45,9 @@ impl App {
 	pub fn run(&mut self) {
 
 		{
-			let vertex1 = MeshVertex { position: [-0.5, -0.5, 0.0], normal: [0.0, 0.0, 0.0] };
-			let vertex2 = MeshVertex { position: [ 0.0,  0.5, 0.0], normal: [0.0, 0.0, 0.0] };
-			let vertex3 = MeshVertex { position: [ 0.5, -0.25, 0.0], normal: [0.0, 0.0, 0.0] };
+			let vertex1 = MeshVertex { position: [-10.0, -10.0, 0.0], normal: [0.0, 0.0, 0.0] };
+			let vertex2 = MeshVertex { position: [ 0.0,  10.0, 0.0], normal: [0.0, 0.0, 0.0] };
+			let vertex3 = MeshVertex { position: [ 10.0, -10.0, 0.0], normal: [0.0, 0.0, 0.0] };
 			let shape = vec![vertex1, vertex2, vertex3];
 
 			let index: [u16; 3] = [0, 1, 2];
@@ -61,6 +62,10 @@ impl App {
 
 			let scene = self.get_graphics_scene().clone().unwrap();
 			scene.borrow_mut().add_mesh_instance(instance);
+
+			let mut camera_pos = Spatial::identity();
+			camera_pos.position = vec3(0.0, 0.0, 2.0);
+			scene.borrow_mut().move_camera(camera_pos);
 		}
 		
 		while self.running {

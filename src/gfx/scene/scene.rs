@@ -4,6 +4,7 @@ use std::hash::{Hash, Hasher};
 
 
 use super::{Camera, MeshInstance};
+use ::math::Spatial;
 
 #[derive(Clone)]
 pub struct MeshInstanceHandle(pub Rc<MeshInstance>);
@@ -59,6 +60,10 @@ impl Scene {
 
 	pub fn set_camera(&mut self, camera: &Camera) {
 		self.camera = *camera;
+	}
+
+	pub fn move_camera(&mut self, spatial: Spatial) {
+		self.camera.spatial = spatial;
 	}
 
 }
