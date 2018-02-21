@@ -7,7 +7,7 @@ use ::gfx::Renderer;
 use ::assets::AssetsManager;
 use ::gfx::scene::Scene as GraphicsScene;
 use ::gfx::{Mesh, MeshVertex};
-use ::gfx::scene::{Entity};
+use ::gfx::scene::MeshInstance;
 use ::math::Spatial;
 
 pub struct App {
@@ -43,24 +43,26 @@ impl App {
 
 	pub fn run(&mut self) {
 
-		let vertex1 = MeshVertex { position: [-0.5, -0.5, 0.0], normal: [0.0, 0.0, 0.0] };
-		let vertex2 = MeshVertex { position: [ 0.0,  0.5, 0.0], normal: [0.0, 0.0, 0.0] };
-		let vertex3 = MeshVertex { position: [ 0.5, -0.25, 0.0], normal: [0.0, 0.0, 0.0] };
-		let shape = vec![vertex1, vertex2, vertex3];
+		{
+			let vertex1 = MeshVertex { position: [-0.5, -0.5, 0.0], normal: [0.0, 0.0, 0.0] };
+			let vertex2 = MeshVertex { position: [ 0.0,  0.5, 0.0], normal: [0.0, 0.0, 0.0] };
+			let vertex3 = MeshVertex { position: [ 0.5, -0.25, 0.0], normal: [0.0, 0.0, 0.0] };
+			let shape = vec![vertex1, vertex2, vertex3];
 
-		let index: [u16; 3] = [0, 1, 2];
+			let index: [u16; 3] = [0, 1, 2];
 
-		let mesh = Rc::new(RefCell::new(Mesh::new(self.renderer.get_display(), &shape, &index)));
+			let mesh = Rc::new(RefCell::new(Mesh::new(self.renderer.get_display(), &shape, &index)));
 
-		let entity = Entity {
-			spatial: Spatial::identity(),
-			is_static: false,
-			mesh: mesh,
-		};
+			let instance = MeshInstance {
+				spatial: Spatial::identity(),
+				is_static: false,
+				mesh: mesh,
+			};
 
-		let iscene = self.get_graphics_scene().clone().unwrap();
-		iscene.borrow_mut().add_entity(entity);
-
+			let scene = self.get_graphics_scene().clone().unwrap();
+			scene.borrow_mut().add_mesh_instance(instance);
+		}
+		
 		while self.running {
 			self.process_events();
 

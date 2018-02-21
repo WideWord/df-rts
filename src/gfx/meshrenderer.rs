@@ -1,13 +1,13 @@
 use glium::{Program, Display, Frame, Surface};
 use glium::uniforms;
 
-use super::scene::{Entity, RenderingPrecalculatedCamera};
+use super::scene::{MeshInstance, RenderingPrecalculatedCamera};
 
-pub struct EntityRenderer {
+pub struct MeshRenderer {
 	shader: Program,
 }
 
-impl EntityRenderer {
+impl MeshRenderer {
 
 	pub fn new(display: &Display) -> Self {
 		let vertex_shader_src = r#"
@@ -32,13 +32,13 @@ impl EntityRenderer {
 
 		let shader = Program::from_source(display, vertex_shader_src, fragment_shader_src, None).unwrap();
 
-		EntityRenderer {
+		MeshRenderer {
 			shader: shader,
 		}
 	}
 
-	pub fn render(&self, target: &mut Frame, _camera: &RenderingPrecalculatedCamera, entity: &Entity) {
-		let mesh = entity.mesh.borrow();
+	pub fn render(&self, target: &mut Frame, _camera: &RenderingPrecalculatedCamera, object: &MeshInstance) {
+		let mesh = object.mesh.borrow();
 		let (vertex_buffer, index_buffer) = mesh.get_buffers();
 
 		target.draw(vertex_buffer, index_buffer, &self.shader, &uniforms::EmptyUniforms,

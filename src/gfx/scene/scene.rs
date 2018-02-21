@@ -1,13 +1,32 @@
 use std::rc::Rc;
-
 use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 
-use super::{Camera, Entity, EntityHandle};
 
+use super::{Camera, MeshInstance};
+
+#[derive(Clone)]
+pub struct MeshInstanceHandle(pub Rc<MeshInstance>);
+
+impl PartialEq for MeshInstanceHandle {
+	fn eq(&self, other: &MeshInstanceHandle) -> bool {
+		Rc::ptr_eq(&self.0, &other.0)
+	}
+}
+
+impl Eq for MeshInstanceHandle {}
+
+impl Hash for MeshInstanceHandle {
+	fn hash<H>(&self, state: &mut H) where H: Hasher {
+		let ptr = Rc::into_raw(self.0.clone());
+    	ptr.hash(state);
+		let _ = unsafe{ Rc::from_raw(ptr) };
+	}
+}
 
 pub struct Scene {
 	camera: Camera,
-	entities: HashSet<EntityHandle>,
+	mesh_instances: HashSet<MeshInstanceHandle>,
 }
 
 impl Scene {
@@ -15,23 +34,23 @@ impl Scene {
 	pub fn new() -> Self {
 		Scene {
 			camera: Camera::new(),
-			entities: HashSet::new(),
+			mesh_instances: HashSet::new(),
 		}
 	}
 
-	pub fn add_entity(&mut self, entity: Entity) -> EntityHandle {
-		let handle = EntityHandle(Rc::new(entity));
-		self.entities.insert(handle.clone());
+	pub fn add_mesh_instance(&mut self, instance: MeshInstance) -> MeshInstanceHandle {
+		let handle = MeshInstanceHandle(Rc::new(instance));
+		self.mesh_instances.insert(handle.clone());
 
 		handle
 	}
 
-	pub fn remove_entity(&mut self, entity_handle: EntityHandle) {
-		self.entities.remove(&entity_handle);
+	pub fn remove_mesh_instance(&mut self, handle: MeshInstanceHandle) {
+		self.mesh_instances.remove(&handle);
 	}
 
-	pub fn get_entities(&self) -> &HashSet<EntityHandle> {
-		return &self.entities;
+	pub fn get_mesh_instances(&self) -> &HashSet<MeshInstanceHandle> {
+		return &self.mesh_instances;
 	}
 
 	pub fn get_camera(&self) -> &Camera {

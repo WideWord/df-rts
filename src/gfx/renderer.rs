@@ -5,11 +5,11 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use super::scene::{Scene, RenderingPrecalculatedCamera};
-use super::EntityRenderer;
+use super::MeshRenderer;
 
 pub struct Renderer {
 	display: Display,
-	entity_renderer: EntityRenderer,
+	mesh_renderer: MeshRenderer,
 }
 
 impl Renderer {
@@ -22,11 +22,11 @@ impl Renderer {
 
 		let display = Display::new(window, context, events_loop).unwrap();
 
-		let entity_renderer = EntityRenderer::new(&display);
+		let mesh_renderer = MeshRenderer::new(&display);
 
 		Renderer {
 			display: display,
-			entity_renderer: entity_renderer,
+			mesh_renderer: mesh_renderer,
 		}
 	}
 
@@ -40,8 +40,8 @@ impl Renderer {
 
 		let precalculated_camera = RenderingPrecalculatedCamera::calculate(scene.borrow().get_camera());
 
-		for entity_ref in scene.borrow().get_entities() {
-			self.entity_renderer.render(&mut target, &precalculated_camera, &entity_ref.0);
+		for entity_ref in scene.borrow().get_mesh_instances() {
+			self.mesh_renderer.render(&mut target, &precalculated_camera, &entity_ref.0);
 		}
 
 		target.finish().unwrap();

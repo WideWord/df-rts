@@ -1,8 +1,8 @@
-mod entityrenderer;
 mod mesh;
+mod meshrenderer;
 mod renderer;
 pub mod scene;
 
-pub use self::entityrenderer::*;
 pub use self::mesh::*;
+pub use self::meshrenderer::*;
 pub use self::renderer::*;
