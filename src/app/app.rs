@@ -2,11 +2,13 @@ use glium::glutin::{EventsLoop, Event, WindowEvent};
 
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::ops::Deref;
 
 use ::gfx::Renderer;
 use ::assets::AssetsManager;
 use ::gfx::scene::Scene as GraphicsScene;
+use ::gfx::{Mesh, MeshVertex};
+use ::gfx::scene::{Entity};
+use ::math::Spatial;
 
 pub struct App {
 	events_loop: Rc<RefCell<EventsLoop>>,
@@ -15,7 +17,7 @@ pub struct App {
 	renderer: Rc<Renderer>,
 	assets_manager: Rc<AssetsManager>,
 
-	graphics_scene: RefCell<Option<Rc<RefCell<GraphicsScene>>>>,
+	graphics_scene: Option<Rc<RefCell<GraphicsScene>>>,
 }
 
 impl App {
@@ -35,11 +37,30 @@ impl App {
 			renderer: renderer,
 			assets_manager: assets_manager,
 
-			graphics_scene: RefCell::new(Some(Rc::new(RefCell::new(GraphicsScene::new())))),
+			graphics_scene: Some(Rc::new(RefCell::new(GraphicsScene::new()))),
 		}	
 	}
 
 	pub fn run(&mut self) {
+
+		let vertex1 = MeshVertex { position: [-0.5, -0.5, 0.0], normal: [0.0, 0.0, 0.0] };
+		let vertex2 = MeshVertex { position: [ 0.0,  0.5, 0.0], normal: [0.0, 0.0, 0.0] };
+		let vertex3 = MeshVertex { position: [ 0.5, -0.25, 0.0], normal: [0.0, 0.0, 0.0] };
+		let shape = vec![vertex1, vertex2, vertex3];
+
+		let index: [u16; 3] = [0, 1, 2];
+
+		let mesh = Rc::new(RefCell::new(Mesh::new(self.renderer.get_display(), &shape, &index)));
+
+		let entity = Entity {
+			spatial: Spatial::identity(),
+			is_static: false,
+			mesh: mesh,
+		};
+
+		let iscene = self.get_graphics_scene().clone().unwrap();
+		iscene.borrow_mut().add_entity(entity);
+
 		while self.running {
 			self.process_events();
 
@@ -49,6 +70,14 @@ impl App {
 
 	pub fn quit(&mut self) {
 		self.running = false
+	}
+
+	pub fn set_graphics_scene(&mut self, scene: Option<Rc<RefCell<GraphicsScene>>>) {
+		self.graphics_scene = scene;
+	}
+
+	pub fn get_graphics_scene(&self) -> Option<Rc<RefCell<GraphicsScene>>> {
+		self.graphics_scene.clone()
 	}
 
 	fn process_events(&mut self) {
@@ -70,8 +99,8 @@ impl App {
 	}
 
 	fn render_scene(&self) {
-		if let &Some(ref scene) = self.graphics_scene.borrow().deref() {
-			self.renderer.render(scene.clone())
+		if let Some(ref scene) = self.graphics_scene {
+			self.renderer.render(&scene.clone())
 		}
 	}
 

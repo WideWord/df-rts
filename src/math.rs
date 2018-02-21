@@ -2,7 +2,7 @@ use cgmath::{Vector3, Quaternion, Zero, One};
 
 pub type Real = f32;
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Spatial {
 	pub position: Vector3<Real>,
 	pub rotation: Quaternion<Real>,
