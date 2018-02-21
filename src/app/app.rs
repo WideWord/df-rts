@@ -3,20 +3,20 @@ use cgmath::{vec3};
 
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::path::PathBuf;
 
 use ::gfx::Renderer;
-use ::assets::AssetsManager;
 use ::gfx::scene::Scene as GraphicsScene;
-use ::gfx::{Mesh, MeshVertex};
+use ::gfx::{Mesh, MeshVertex, Material};
 use ::gfx::scene::MeshInstance;
 use ::math::Spatial;
+use ::assets::{AssetRef, load_texture};
 
 pub struct App {
 	events_loop: Rc<RefCell<EventsLoop>>,
 	running: bool,
 
 	renderer: Rc<Renderer>,
-	assets_manager: Rc<AssetsManager>,
 
 	graphics_scene: Option<Rc<RefCell<GraphicsScene>>>,
 }
@@ -29,14 +29,11 @@ impl App {
 
 		let renderer = Rc::new(Renderer::new(&events_loop.borrow_mut()));
 
-		let assets_manager = Rc::new(AssetsManager::new(renderer.clone()));
-
 		App {
 			events_loop: events_loop,
 			running: true,
 
 			renderer: renderer,
-			assets_manager: assets_manager,
 
 			graphics_scene: Some(Rc::new(RefCell::new(GraphicsScene::new()))),
 		}	
@@ -45,14 +42,20 @@ impl App {
 	pub fn run(&mut self) {
 
 		{
-			let vertex1 = MeshVertex { position: [-10.0, -10.0, 0.0], normal: [0.0, 0.0, 0.0] };
-			let vertex2 = MeshVertex { position: [ 0.0,  10.0, 0.0], normal: [0.0, 0.0, 0.0] };
-			let vertex3 = MeshVertex { position: [ 10.0, -10.0, 0.0], normal: [0.0, 0.0, 0.0] };
+			let vertex1 = MeshVertex { position: [-10.0, -10.0, 0.0], normal: [0.0, 0.0, 0.0], uv: [-1.0, -1.0] };
+			let vertex2 = MeshVertex { position: [ 0.0,  10.0, 0.0], normal: [0.0, 0.0, 0.0], uv: [0.0, 1.0] };
+			let vertex3 = MeshVertex { position: [ 10.0, -10.0, 0.0], normal: [0.0, 0.0, 0.0], uv: [1.0, -1.0] };
 			let shape = vec![vertex1, vertex2, vertex3];
 
 			let index: [u16; 3] = [0, 1, 2];
 
-			let mesh = Rc::new(RefCell::new(Mesh::new(self.renderer.get_display(), &shape, &index)));
+			let texture = load_texture(self.renderer.get_display(), PathBuf::from("data/sand.jpg").as_path());
+
+			let material = AssetRef::from(Material {
+				albedo: texture,
+			});
+
+			let mesh = AssetRef::from(Mesh::new(self.renderer.get_display(), &shape, &index, material));
 
 			let instance = MeshInstance {
 				spatial: Spatial::identity(),
@@ -64,7 +67,7 @@ impl App {
 			scene.borrow_mut().add_mesh_instance(instance);
 
 			let mut camera_pos = Spatial::identity();
-			camera_pos.position = vec3(0.0, 0.0, 2.0);
+			camera_pos.position = vec3(0.0, 0.0, 10.0);
 			scene.borrow_mut().move_camera(camera_pos);
 		}
 		
