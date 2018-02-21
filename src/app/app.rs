@@ -2,9 +2,11 @@ use glium::glutin::{EventsLoop, Event, WindowEvent};
 
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::ops::Deref;
 
 use ::gfx::Renderer;
 use ::assets::AssetsManager;
+use ::gfx::scene::Scene as GraphicsScene;
 
 pub struct App {
 	events_loop: Rc<RefCell<EventsLoop>>,
@@ -12,6 +14,8 @@ pub struct App {
 
 	renderer: Rc<Renderer>,
 	assets_manager: Rc<AssetsManager>,
+
+	graphics_scene: RefCell<Option<Rc<RefCell<GraphicsScene>>>>,
 }
 
 impl App {
@@ -30,13 +34,16 @@ impl App {
 
 			renderer: renderer,
 			assets_manager: assets_manager,
+
+			graphics_scene: RefCell::new(Some(Rc::new(RefCell::new(GraphicsScene::new())))),
 		}	
 	}
 
 	pub fn run(&mut self) {
 		while self.running {
 			self.process_events();
-			self.renderer.render();
+
+			self.render_scene();
 		}
 	}
 
@@ -59,6 +66,12 @@ impl App {
 				_ => (),
 			},
 			_ => (),
+		}
+	}
+
+	fn render_scene(&self) {
+		if let &Some(ref scene) = self.graphics_scene.borrow().deref() {
+			self.renderer.render(scene.clone())
 		}
 	}
 

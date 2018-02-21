@@ -1,8 +1,10 @@
-extern crate glium;
-
 use glium::glutin::{EventsLoop, WindowBuilder, ContextBuilder};
 use glium::{Surface, Display};
 
+use std::rc::Rc;
+use std::cell::RefCell;
+
+use super::scene::Scene;
 
 pub struct Renderer {
 	display: Display,
@@ -27,7 +29,7 @@ impl Renderer {
 		&self.display
 	}
 
-	pub fn render(&self) {
+	pub fn render(&self, scene: Rc<RefCell<Scene>>) {
 		let mut target = self.display.draw();
 
 		target.clear_color(0.0, 0.0, 1.0, 1.0);

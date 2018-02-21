@@ -1,9 +1,11 @@
 extern crate glium;
 extern crate image;
+extern crate cgmath;
 
 mod app;
-mod gfx;
 mod assets;
+mod gfx;
+mod math;
 
 use app::App;
 
