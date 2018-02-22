@@ -54,8 +54,12 @@ impl Scene {
 		return &self.mesh_instances;
 	}
 
-	pub fn get_camera(&self) -> &Camera {
+	pub fn camera(&self) -> &Camera {
 		return &self.camera
+	}
+
+	pub fn camera_mut(&mut self) -> &mut Camera {
+		return &mut self.camera
 	}
 
 	pub fn set_camera(&mut self, camera: &Camera) {

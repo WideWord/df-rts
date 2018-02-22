@@ -63,8 +63,9 @@ impl Renderer {
 		{
 			let mut target = self.g_buffer.get_framebuffer(&self.display);
 			target.clear_color(0.0, 0.0, 0.0, 1.0);
+			target.clear_depth(1.0);
 
-			let precalculated_camera = RenderingPrecalculatedCamera::calculate(scene.borrow().get_camera(), viewport);
+			let precalculated_camera = RenderingPrecalculatedCamera::calculate(scene.borrow().camera(), viewport);
 
 			for entity_ref in scene.borrow().get_mesh_instances() {
 				self.mesh_renderer.render(&mut target, &draw_parameters, &precalculated_camera, &entity_ref.0);

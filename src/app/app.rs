@@ -7,14 +7,20 @@ use std::path::PathBuf;
 
 use ::gfx::Renderer;
 use ::gfx::scene::Scene as GraphicsScene;
-use ::gfx::{Mesh, MeshVertex, Material};
+use ::gfx::{Material};
 use ::gfx::scene::MeshInstance;
 use ::math::Spatial;
 use ::assets::{AssetRef, load_texture, load_mesh};
+use super::Input;
+use super::input;
+use std::time::{Duration, SystemTime};
 
 pub struct App {
 	events_loop: Rc<RefCell<EventsLoop>>,
 	running: bool,
+	input: Input,
+	last_frame_time: SystemTime,
+	delta_time: f32,
 
 	renderer: Rc<Renderer>,
 
@@ -32,6 +38,9 @@ impl App {
 		App {
 			events_loop: events_loop,
 			running: true,
+			input: Input::new(),
+			last_frame_time: SystemTime::now(),
+			delta_time: 0.0,
 
 			renderer: renderer,
 
@@ -56,16 +65,37 @@ impl App {
 				mesh: mesh,
 			};
 
-			let scene = self.get_graphics_scene().clone().unwrap();
+			let scene = self.graphics_scene().clone().unwrap();
 			scene.borrow_mut().add_mesh_instance(instance);
-
-			let mut camera_pos = Spatial::identity();
-			camera_pos.position = vec3(0.0, 0.0, 10.0);
-			scene.borrow_mut().move_camera(camera_pos);
 		}
 		
 		while self.running {
+
+
 			self.process_events();
+
+			let delta_duration = self.last_frame_time.elapsed().unwrap();
+			self.delta_time = (delta_duration.as_secs() as f32) + (delta_duration.subsec_nanos() as f32) * 0.000000001;
+			self.last_frame_time = SystemTime::now();
+
+			{
+				let mut tr = vec3(0.0, 0.0, 0.0);
+				
+				if self.input.is_key_down(input::Key::Forward) {
+					tr += vec3(0.0, 0.0, -1.0);
+				}
+				if self.input.is_key_down(input::Key::Backward) {
+					tr += vec3(0.0, 0.0, 1.0);
+				}
+				if self.input.is_key_down(input::Key::Left) {
+					tr += vec3(-1.0, 0.0, 0.0);
+				}
+				if self.input.is_key_down(input::Key::Right) {
+					tr += vec3(1.0, 0.0, 0.0);
+				}
+				let scene = self.graphics_scene.clone().unwrap();
+				scene.borrow_mut().camera_mut().spatial.position += tr * self.delta_time;
+			}
 
 			self.render_scene();
 		}
@@ -79,11 +109,14 @@ impl App {
 		self.graphics_scene = scene;
 	}
 
-	pub fn get_graphics_scene(&self) -> Option<Rc<RefCell<GraphicsScene>>> {
+	pub fn graphics_scene(&self) -> Option<Rc<RefCell<GraphicsScene>>> {
 		self.graphics_scene.clone()
 	}
 
 	fn process_events(&mut self) {
+
+		self.input.new_frame();
+
 		let events_loop = self.events_loop.clone();
 
 		events_loop.borrow_mut().poll_events(|event| {
@@ -95,6 +128,7 @@ impl App {
 		match event {
 			Event::WindowEvent { event, .. } => match event {
 				WindowEvent::Closed => self.quit(),
+				WindowEvent::KeyboardInput { device_id: _, input: keyboard_event } => self.input.consume(&keyboard_event),
 				_ => (),
 			},
 			_ => (),

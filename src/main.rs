@@ -1,8 +1,9 @@
-#[macro_use]
-extern crate glium;
+#[macro_use] extern crate glium;
 extern crate image;
 extern crate cgmath;
 extern crate assimp;
+extern crate enum_map;
+#[macro_use] extern crate enum_map_derive;
 
 mod app;
 mod assets;

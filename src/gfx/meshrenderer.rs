@@ -1,4 +1,5 @@
-use glium::{Program, Display, Surface, DrawParameters};
+use glium::{Program, Display, Surface, DrawParameters, Depth};
+use glium::draw_parameters::DepthTest;
 use cgmath::{Matrix4};
 use cgmath::prelude::Matrix;
 
@@ -63,15 +64,24 @@ impl MeshRenderer {
 
 		let uniforms = uniform! {
 			transform: [
-				[transform.row(0).x, transform.row(0).y, transform.row(0).z, transform.row(0).w],
-				[transform.row(1).x, transform.row(1).y, transform.row(1).z, transform.row(1).w],
-				[transform.row(2).x, transform.row(2).y, transform.row(2).z, transform.row(2).w],
-				[transform.row(3).x, transform.row(3).y, transform.row(3).z, transform.row(3).w],
+				[transform.row(0).x, transform.row(1).x, transform.row(2).x, transform.row(3).x],
+				[transform.row(0).y, transform.row(1).y, transform.row(2).y, transform.row(3).y],
+				[transform.row(0).z, transform.row(1).z, transform.row(2).z, transform.row(3).z],
+				[transform.row(0).w, transform.row(1).w, transform.row(2).w, transform.row(3).w],
 			],
 			albedo: albedo.deref(),
 		};
 
-		target.draw(vertex_buffer, index_buffer, &self.shader, &uniforms, draw_parameters).unwrap();
+		let mut draw_parameters = draw_parameters.clone();
+
+		draw_parameters.depth = Depth {
+        	test: DepthTest::IfLess,
+        	write: true,
+        	.. Default::default()
+    	};
+
+
+		target.draw(vertex_buffer, index_buffer, &self.shader, &uniforms, &draw_parameters).unwrap();
 	}
 
 }
