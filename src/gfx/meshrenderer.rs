@@ -1,4 +1,4 @@
-use glium::{Program, Display, Frame, Surface, DrawParameters, Texture2d};
+use glium::{Program, Display, Surface, DrawParameters};
 use cgmath::{Matrix4};
 use cgmath::prelude::Matrix;
 
@@ -36,11 +36,10 @@ impl MeshRenderer {
 
 			uniform sampler2D albedo;
 
-			out vec4 color;
+			out vec3 o_albedo;
 
 			void main() {
-				vec3 tex_color = texture(albedo, v_uv).rgb;
-				color = vec4(tex_color, 1);
+				o_albedo = texture(albedo, v_uv).rgb;
 			}
 		"#;
 
@@ -51,7 +50,7 @@ impl MeshRenderer {
 		}
 	}
 
-	pub fn render(&self, target: &mut Frame, draw_parameters: &DrawParameters, camera: &RenderingPrecalculatedCamera, object: &MeshInstance) {
+	pub fn render<F: Surface>(&self, target: &mut F, draw_parameters: &DrawParameters, camera: &RenderingPrecalculatedCamera, object: &MeshInstance) {
 		let mesh = object.mesh.asset.borrow();
 		let (vertex_buffer, index_buffer) = mesh.get_buffers();
 
