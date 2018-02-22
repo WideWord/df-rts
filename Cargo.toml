@@ -7,3 +7,4 @@ authors = ["Kirill Vilkov <wide.wrd@gmail.com>"]
 glium = "*"
 cgmath = "*"
 image = "*"
+assimp = "0.3.1"

@@ -15,13 +15,13 @@ implement_vertex!(MeshVertex, position, normal, uv);
 
 pub struct Mesh {
 	vertex_buffer: VertexBuffer<MeshVertex>,
-	index_buffer: IndexBuffer<u16>,
+	index_buffer: IndexBuffer<u32>,
 	pub material: AssetRef<Material>,
 }
 
 impl Mesh {
 
-	pub fn new(display: &Display, verticies: &[MeshVertex], indicies: &[u16], material: AssetRef<Material>) -> Self {
+	pub fn new(display: &Display, verticies: &[MeshVertex], indicies: &[u32], material: AssetRef<Material>) -> Self {
 		let vertex_buffer = VertexBuffer::new(display, verticies).unwrap();
 		let index_buffer = IndexBuffer::new(
 			display,
@@ -36,7 +36,7 @@ impl Mesh {
         }
 	}
 
-	pub fn get_buffers(&self) -> (&VertexBuffer<MeshVertex>, &IndexBuffer<u16>) {
+	pub fn get_buffers(&self) -> (&VertexBuffer<MeshVertex>, &IndexBuffer<u32>) {
 		(&self.vertex_buffer, &self.index_buffer)
 	}
 

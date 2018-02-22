@@ -2,6 +2,7 @@
 extern crate glium;
 extern crate image;
 extern crate cgmath;
+extern crate assimp;
 
 mod app;
 mod assets;

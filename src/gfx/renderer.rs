@@ -66,13 +66,11 @@ impl Renderer {
 
 			let precalculated_camera = RenderingPrecalculatedCamera::calculate(scene.borrow().get_camera(), viewport);
 
-			
-
 			for entity_ref in scene.borrow().get_mesh_instances() {
 				self.mesh_renderer.render(&mut target, &draw_parameters, &precalculated_camera, &entity_ref.0);
 			}
-
 		}
+
  		{
 			let mut target = self.display.draw();
 			target.clear_color(0.0, 1.0, 1.0, 1.0);
@@ -81,6 +79,7 @@ impl Renderer {
 
 			target.finish().unwrap();
 		}
+
 	}
 
 }

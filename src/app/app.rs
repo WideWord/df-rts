@@ -10,7 +10,7 @@ use ::gfx::scene::Scene as GraphicsScene;
 use ::gfx::{Mesh, MeshVertex, Material};
 use ::gfx::scene::MeshInstance;
 use ::math::Spatial;
-use ::assets::{AssetRef, load_texture};
+use ::assets::{AssetRef, load_texture, load_mesh};
 
 pub struct App {
 	events_loop: Rc<RefCell<EventsLoop>>,
@@ -42,20 +42,13 @@ impl App {
 	pub fn run(&mut self) {
 
 		{
-			let vertex1 = MeshVertex { position: [-10.0, -10.0, 0.0], normal: [0.0, 0.0, 0.0], uv: [-1.0, -1.0] };
-			let vertex2 = MeshVertex { position: [ 0.0,  10.0, 0.0], normal: [0.0, 0.0, 0.0], uv: [0.0, 1.0] };
-			let vertex3 = MeshVertex { position: [ 10.0, -10.0, 0.0], normal: [0.0, 0.0, 0.0], uv: [1.0, -1.0] };
-			let shape = vec![vertex1, vertex2, vertex3];
-
-			let index: [u16; 3] = [0, 1, 2];
-
 			let texture = load_texture(self.renderer.get_display(), PathBuf::from("data/sand.jpg").as_path());
 
 			let material = AssetRef::from(Material {
 				albedo: texture,
 			});
 
-			let mesh = AssetRef::from(Mesh::new(self.renderer.get_display(), &shape, &index, material));
+			let mesh = load_mesh(self.renderer.get_display(), PathBuf::from("data/monkey.dae").as_path(), material);
 
 			let instance = MeshInstance {
 				spatial: Spatial::identity(),
