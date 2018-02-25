@@ -1,4 +1,4 @@
-use glium::glutin::{EventsLoop, Event, WindowEvent};
+use glium::glutin::{EventsLoop};
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -145,7 +145,7 @@ impl App {
 
 	fn render_scene(&self) {
 		if let Some(ref scene) = self.graphics_scene {
-			self.renderer.render(&scene.clone())
+			self.renderer.render(&scene.borrow())
 		}
 	}
 

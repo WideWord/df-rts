@@ -49,7 +49,7 @@ impl Renderer {
 		&self.display
 	}
 
-	pub fn render(&self, scene: &Rc<RefCell<Scene>>) {		
+	pub fn render(&self, scene: &Scene) {		
 
 		let viewport = (1024 * 2, 768 * 2);
 
@@ -68,9 +68,7 @@ impl Renderer {
 			target.clear_color(0.0, 0.0, 0.0, 1.0);
 			target.clear_depth(1.0);
 
-			let precalculated_camera = CameraRenderingParameters::new(scene.borrow().camera(), viewport);
-
-			let scene = scene.borrow();
+			let precalculated_camera = CameraRenderingParameters::new(scene.camera(), viewport);
 
 			for entity_ref in scene.get_mesh_instances() {
 				self.mesh_renderer.render(&mut target, &draw_parameters, &precalculated_camera, &entity_ref.0);
