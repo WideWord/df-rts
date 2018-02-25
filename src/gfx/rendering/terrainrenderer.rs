@@ -29,17 +29,29 @@ impl TerrainRenderer {
 
 			in vec2 position;
 
-			uniform mat4 transform;
-			uniform vec3 scale;
-			uniform sampler2D map;
+			uniform mat4 u_transform;
+			uniform vec3 u_scale;
+			uniform sampler2D u_map;
 
 			out vec2 v_uv;
+			out vec3 v_normal;
+
 
 			void main() {
-				vec4 map = texture(map, position);
-				vec3 terrain_position = vec3(position.x * scale.x, map.r * scale.y, position.y * scale.z);
-				gl_Position = transform * vec4(terrain_position, 1.0);
+				vec4 map = texture(u_map, position);
+				vec3 terrain_position = vec3(position.x * u_scale.x, map.r * u_scale.y, position.y * u_scale.z);
+				gl_Position = u_transform * vec4(terrain_position, 1.0);
 				v_uv = terrain_position.xz;
+
+				float step = 1.0 / 64.0;
+
+				float s01 = texture(u_map, position + vec2(-step, 0)).x;
+    			float s21 = texture(u_map, position + vec2(step, 0)).x;
+    			float s10 = texture(u_map, position + vec2(0, -step)).x;
+    			float s12 = texture(u_map, position + vec2(0, step)).x;
+    			vec3 va = normalize(vec3(u_scale.x / 32, (s21 - s01) * u_scale.y, 0.0));
+    			vec3 vb = normalize(vec3(0.0, (s12 - s10) * u_scale.y, u_scale.z / 32));
+    			v_normal = (-cross(va, vb) + vec3(1, 1, 1)) * 0.5;
 			}
 		"#;
 
@@ -47,15 +59,16 @@ impl TerrainRenderer {
 			#version 140
 
 			in vec2 v_uv;
+			in vec3 v_normal;
 
-			uniform sampler2D albedo;
+			uniform sampler2D u_albedo;
 
 			out vec4 o_albedo;
 			out vec4 o_normal;
 
 			void main() {
-				o_albedo = texture(albedo, v_uv);
-				o_normal = vec4(0.0, 1.0, 0.0, 1.0);
+				o_albedo = texture(u_albedo, v_uv);
+				o_normal = vec4(v_normal, 1.0);
 			}
 		"#;
 
@@ -101,7 +114,7 @@ impl TerrainRenderer {
 		}
 	}
 
-	pub fn draw<F: Surface>(&self, target: &mut F, draw_parameters: &DrawParameters, camera: &CameraRenderingParameters, terrain: &Terrain) {
+	pub fn render<Target: Surface>(&self, target: &mut Target, draw_parameters: &DrawParameters, camera: &CameraRenderingParameters, terrain: &Terrain) {
 		let transform = camera.view_projection;
 
 		let map = terrain.map.asset.borrow();
@@ -109,10 +122,10 @@ impl TerrainRenderer {
 		let albedo = material.albedo.asset.borrow();
 
 		let uniforms = uniform! {
-			transform: matrix4_to_array(transform),
-			scale: [terrain.scale.x, terrain.scale.y, terrain.scale.z],
-			map: map.deref(),
-			albedo: albedo.deref(),
+			u_transform: matrix4_to_array(transform),
+			u_scale: [terrain.scale.x, terrain.scale.y, terrain.scale.z],
+			u_map: map.deref(),
+			u_albedo: albedo.deref(),
 		};
 
 		let mut draw_parameters = draw_parameters.clone();

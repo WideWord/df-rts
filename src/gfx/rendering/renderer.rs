@@ -1,9 +1,6 @@
 use glium::glutin::{EventsLoop, WindowBuilder, ContextBuilder};
 use glium::{Surface, Display, Rect, DrawParameters};
 
-use std::rc::Rc;
-use std::cell::RefCell;
-
 use ::gfx::scene::{Scene, CameraRenderingParameters};
 use ::gfx::rendering::{MeshRenderer, TerrainRenderer, GBuffer};
 use ::gfx::lighting::LightRenderer;
@@ -75,7 +72,7 @@ impl Renderer {
 			}
 
 			if let Some(terrain) = scene.terrain() {
-				self.terrain_renderer.draw(&mut target, &draw_parameters, &precalculated_camera, &terrain.asset.borrow());
+				self.terrain_renderer.render(&mut target, &draw_parameters, &precalculated_camera, &terrain.asset.borrow());
 			}
 		}
 

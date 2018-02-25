@@ -52,7 +52,7 @@ impl LightRenderer {
 
 				float lighting = dot(normalize(normal.xyz), -normalize(vec3(0.3, -1, -0.3)));
 
-				color = vec4(albedo.rgb, 1);
+				color = vec4(lighting * albedo.rgb, 1);
 			}
 		"#;
 
