@@ -38,13 +38,21 @@ impl LightRenderer {
 
 			in vec2 v_position;
 
-			uniform sampler2D albedo;
+			uniform sampler2D s_albedo;
+			uniform sampler2D s_normal;
 
 			out vec4 color;
 
 			void main() {
-				vec3 tex_color = texture(albedo, v_position).rgb;
-				color = vec4(tex_color, 1);
+				vec4 t_albedo = texture(s_albedo, v_position);
+				vec4 t_normal = texture(s_normal, v_position);
+
+				vec3 normal = t_normal.xyz * 2 - vec3(1, 1, 1);
+				vec3 albedo = t_albedo.rgb;
+
+				float lighting = dot(normalize(normal.xyz), -normalize(vec3(0.3, -1, -0.3)));
+
+				color = vec4(lighting * albedo.rgb, 1);
 			}
 		"#;
 
@@ -78,7 +86,8 @@ impl LightRenderer {
 	pub fn render<F: Surface>(&self, target: &mut F, draw_parameters: &DrawParameters, g_buffer: &GBuffer) {
 
 		let uniforms = uniform! {
-			albedo: g_buffer.get_albedo_texture(),
+			s_albedo: g_buffer.albedo_texture(),
+			s_normal: g_buffer.normal_texture(),
 		};
 
 		target.draw(&self.vertex_buffer, &self.index_buffer, &self.shader, &uniforms, draw_parameters).unwrap();

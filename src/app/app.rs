@@ -13,7 +13,7 @@ use ::math::Spatial;
 use ::assets::{AssetRef, load_texture, load_mesh};
 use super::Input;
 use super::input;
-use std::time::{Duration, SystemTime};
+use std::time::{SystemTime};
 
 pub struct App {
 	events_loop: Rc<RefCell<EventsLoop>>,
@@ -93,8 +93,13 @@ impl App {
 				if self.input.is_key_down(input::Key::Right) {
 					tr += vec3(1.0, 0.0, 0.0);
 				}
-				let scene = self.graphics_scene.clone().unwrap();
-				scene.borrow_mut().camera_mut().spatial.position += tr * self.delta_time;
+
+				{
+					let scene_ref = self.graphics_scene.clone().unwrap();
+					let mut scene = scene_ref.borrow_mut();
+					let camera = scene.camera_mut();
+					camera.spatial.position += (camera.spatial.rotation_matrix() * tr) * self.delta_time;
+				}				
 			}
 
 			self.render_scene();
@@ -128,9 +133,10 @@ impl App {
 		match event {
 			Event::WindowEvent { event, .. } => match event {
 				WindowEvent::Closed => self.quit(),
-				WindowEvent::KeyboardInput { device_id: _, input: keyboard_event } => self.input.consume(&keyboard_event),
+				WindowEvent::KeyboardInput { input, .. } => self.input.consume_keyboard(input),
 				_ => (),
 			},
+			Event::DeviceEvent { event, .. } => self.input.consume_device(event),
 			_ => (),
 		}
 	}

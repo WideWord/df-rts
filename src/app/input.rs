@@ -1,5 +1,8 @@
-use glium::glutin::{KeyboardInput, ElementState};
+use glium::glutin::{KeyboardInput, DeviceEvent, ElementState};
 use enum_map::EnumMap;
+use cgmath::{Vector2, vec2};
+
+use ::math::Real;
 
 #[derive(PartialEq, Eq, Clone, Copy, EnumMap)]
 pub enum Key {
@@ -25,6 +28,7 @@ impl Default for KeyState {
 
 pub struct Input {
 	key_states: EnumMap<Key, KeyState>,
+	delta_mouse: Vector2<Real>,
 }
 
 impl Input {
@@ -32,6 +36,7 @@ impl Input {
 	pub fn new() -> Self {
 		Input {
 			key_states: EnumMap::default(),
+			delta_mouse: vec2(0.0, 0.0),
 		}
 	}
 
@@ -43,9 +48,10 @@ impl Input {
 				_ => (),
 			}
 		}
+		self.delta_mouse = vec2(0.0, 0.0);
 	}
 
-	pub fn consume(&mut self, event: &KeyboardInput) {
+	pub fn consume_keyboard(&mut self, event: KeyboardInput) {
 		if let Some(key) = self.key_from_scancode(event.scancode) {
 			match event.state {
 				ElementState::Pressed => if self.key_states[key] == KeyState::Up || self.key_states[key] == KeyState::Released {
@@ -55,6 +61,15 @@ impl Input {
 					self.key_states[key] = KeyState::Released;
 				}
 			}
+		}
+	}
+
+	pub fn consume_device(&mut self, event: DeviceEvent) {
+		match event {
+			DeviceEvent::MouseMotion { delta } => {
+				self.delta_mouse += vec2(delta.0 as Real, delta.1 as Real);
+			},
+			_ => (),
 		}
 	}
 

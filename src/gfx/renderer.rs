@@ -61,7 +61,7 @@ impl Renderer {
 		};
 
 		{
-			let mut target = self.g_buffer.get_framebuffer(&self.display);
+			let mut target = self.g_buffer.framebuffer(&self.display);
 			target.clear_color(0.0, 0.0, 0.0, 1.0);
 			target.clear_depth(1.0);
 

@@ -1,11 +1,10 @@
 use glium::{Program, Display, Surface, DrawParameters, Depth};
 use glium::draw_parameters::DepthTest;
-use cgmath::{Matrix4};
-use cgmath::prelude::Matrix;
 
 use std::ops::Deref;
 
 use super::scene::{MeshInstance, RenderingPrecalculatedCamera};
+use ::math::*;
 
 pub struct MeshRenderer {
 	shader: Program,
@@ -18,15 +17,20 @@ impl MeshRenderer {
 			#version 140
 
 			in vec3 position;
+			in vec3 normal;
 			in vec2 uv;
 
+			uniform mat3 normal_transform;
 			uniform mat4 transform;
 
+			out vec3 v_normal;
 			out vec2 v_uv;
 
 			void main() {
 				gl_Position = transform * vec4(position, 1.0);
 				v_uv = uv;
+				vec3 world_normal = normal_transform * normalize(normal);
+				v_normal = (world_normal + vec3(1, 1, 1)) * 0.5;
 			}
 		"#;
 
@@ -34,13 +38,16 @@ impl MeshRenderer {
 			#version 140
 
 			in vec2 v_uv;
+			in vec3 v_normal;
 
 			uniform sampler2D albedo;
 
-			out vec3 o_albedo;
+			out vec4 o_albedo;
+			out vec4 o_normal;
 
 			void main() {
-				o_albedo = texture(albedo, v_uv).rgb;
+				o_albedo = texture(albedo, v_uv);
+				o_normal = vec4(v_normal, 1.0);
 			}
 		"#;
 
@@ -55,7 +62,7 @@ impl MeshRenderer {
 		let mesh = object.mesh.asset.borrow();
 		let (vertex_buffer, index_buffer) = mesh.get_buffers();
 
-		let model_transform = Matrix4::from_translation(object.spatial.position) * Matrix4::from(object.spatial.rotation);
+		let model_transform = object.spatial.transform_matrix();
 
 		let transform = camera.view_projection * model_transform;
 
@@ -63,12 +70,8 @@ impl MeshRenderer {
 		let albedo = material.albedo.asset.borrow();
 
 		let uniforms = uniform! {
-			transform: [
-				[transform.row(0).x, transform.row(1).x, transform.row(2).x, transform.row(3).x],
-				[transform.row(0).y, transform.row(1).y, transform.row(2).y, transform.row(3).y],
-				[transform.row(0).z, transform.row(1).z, transform.row(2).z, transform.row(3).z],
-				[transform.row(0).w, transform.row(1).w, transform.row(2).w, transform.row(3).w],
-			],
+			transform: matrix4_to_array(transform),
+			normal_transform: matrix3_to_array(object.spatial.rotation_matrix()),
 			albedo: albedo.deref(),
 		};
 
