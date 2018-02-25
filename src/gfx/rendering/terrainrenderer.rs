@@ -1,10 +1,10 @@
-use glium::{Program, Display, Surface, DrawParameters, VertexBuffer, IndexBuffer, Depth};
+use glium::{Program, Display, Surface, VertexBuffer, IndexBuffer, Depth};
 use glium::index::PrimitiveType;
 use glium::draw_parameters::DepthTest;
 
 use std::ops::Deref;
 
-use ::gfx::scene::CameraRenderingParameters;
+use ::gfx::rendering::RenderParameters;
 use ::terrain::Terrain;
 use ::math::*;
 
@@ -114,8 +114,8 @@ impl TerrainRenderer {
 		}
 	}
 
-	pub fn render<Target: Surface>(&self, target: &mut Target, draw_parameters: &DrawParameters, camera: &CameraRenderingParameters, terrain: &Terrain) {
-		let transform = camera.view_projection;
+	pub fn render<Target: Surface>(&self, target: &mut Target, params: &RenderParameters, terrain: &Terrain) {
+		let transform = params.camera.view_projection;
 
 		let map = terrain.map.asset.borrow();
 		let material = terrain.materials[0].asset.borrow();
@@ -128,7 +128,7 @@ impl TerrainRenderer {
 			u_albedo: albedo.deref(),
 		};
 
-		let mut draw_parameters = draw_parameters.clone();
+		let mut draw_parameters = params.draw_parameters.clone();
 
 		draw_parameters.depth = Depth {
         	test: DepthTest::IfLess,

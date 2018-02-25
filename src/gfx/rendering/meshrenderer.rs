@@ -1,9 +1,10 @@
-use glium::{Program, Display, Surface, DrawParameters, Depth};
+use glium::{Program, Display, Surface, Depth};
 use glium::draw_parameters::DepthTest;
 
 use std::ops::Deref;
 
-use ::gfx::scene::{MeshInstance, CameraRenderingParameters};
+use ::gfx::scene::MeshInstance;
+use ::gfx::rendering::RenderParameters;
 use ::math::*;
 
 pub struct MeshRenderer {
@@ -58,13 +59,13 @@ impl MeshRenderer {
 		}
 	}
 
-	pub fn render<F: Surface>(&self, target: &mut F, draw_parameters: &DrawParameters, camera: &CameraRenderingParameters, object: &MeshInstance) {
+	pub fn render<F: Surface>(&self, target: &mut F, params: &RenderParameters, object: &MeshInstance) {
 		let mesh = object.mesh.asset.borrow();
 		let (vertex_buffer, index_buffer) = mesh.get_buffers();
 
 		let model_transform = object.spatial.transform_matrix();
 
-		let transform = camera.view_projection * model_transform;
+		let transform = params.camera.view_projection * model_transform;
 
 		let material = mesh.material.asset.borrow();
 		let albedo = material.albedo.asset.borrow();
@@ -75,7 +76,7 @@ impl MeshRenderer {
 			albedo: albedo.deref(),
 		};
 
-		let mut draw_parameters = draw_parameters.clone();
+		let mut draw_parameters = params.draw_parameters.clone();
 
 		draw_parameters.depth = Depth {
         	test: DepthTest::IfLess,

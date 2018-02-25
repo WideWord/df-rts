@@ -1,8 +1,8 @@
 use glium::glutin::{EventsLoop, WindowBuilder, ContextBuilder};
 use glium::{Surface, Display, Rect, DrawParameters};
 
-use ::gfx::scene::{Scene, CameraRenderingParameters};
-use ::gfx::rendering::{MeshRenderer, TerrainRenderer, GBuffer};
+use ::gfx::scene::{Scene, CameraRenderParameters};
+use ::gfx::rendering::{MeshRenderer, TerrainRenderer, GBuffer, RenderParameters};
 use ::gfx::lighting::LightRenderer;
 
 pub struct Renderer {
@@ -65,14 +65,19 @@ impl Renderer {
 			target.clear_color(0.0, 0.0, 0.0, 1.0);
 			target.clear_depth(1.0);
 
-			let precalculated_camera = CameraRenderingParameters::new(scene.camera(), viewport);
+			let camera = CameraRenderParameters::new(scene.camera(), viewport);
+
+			let render_parameters = RenderParameters {
+				camera: camera,
+				draw_parameters: draw_parameters.clone(),
+			};
 
 			for entity_ref in scene.get_mesh_instances() {
-				self.mesh_renderer.render(&mut target, &draw_parameters, &precalculated_camera, &entity_ref.0);
+				self.mesh_renderer.render(&mut target, &render_parameters, &entity_ref.0);
 			}
 
 			if let Some(terrain) = scene.terrain() {
-				self.terrain_renderer.render(&mut target, &draw_parameters, &precalculated_camera, &terrain.asset.borrow());
+				self.terrain_renderer.render(&mut target, &render_parameters, &terrain.asset.borrow());
 			}
 		}
 

@@ -23,21 +23,21 @@ impl Camera {
 
 }
 
-pub struct CameraRenderingParameters {
+pub struct CameraRenderParameters {
 	pub spatial: Spatial,
 	pub projection: Matrix4,
 	pub view: Matrix4,
 	pub view_projection: Matrix4,
 }
 
-impl CameraRenderingParameters {
+impl CameraRenderParameters {
 
 	pub fn new(camera: &Camera, frame_size: (u32, u32)) -> Self {
 		let projection = perspective(camera.fov_y, (frame_size.0 as Real) / (frame_size.1 as Real), camera.z_near, camera.z_far);
 		let view = camera.spatial.inverse_transform_matrix();
 		let view_projection = projection * view;
 
-		CameraRenderingParameters {
+		CameraRenderParameters {
 			spatial: camera.spatial,
 			projection: projection,
 			view: view,
