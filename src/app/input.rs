@@ -1,8 +1,7 @@
-use glium::glutin::{KeyboardInput, DeviceEvent, ElementState};
+use glium::glutin::{Event, DeviceEvent, ElementState, WindowEvent, MouseButton};
 use enum_map::EnumMap;
-use cgmath::{Vector2, vec2};
 
-use ::math::Real;
+use ::math::*;
 
 #[derive(PartialEq, Eq, Clone, Copy, EnumMap)]
 pub enum Key {
@@ -10,6 +9,7 @@ pub enum Key {
 	Backward,
 	Left,
 	Right,
+	LookAround,
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, EnumMap)]
@@ -28,7 +28,7 @@ impl Default for KeyState {
 
 pub struct Input {
 	key_states: EnumMap<Key, KeyState>,
-	delta_mouse: Vector2<Real>,
+	delta_mouse: Vector2,
 }
 
 impl Input {
@@ -51,23 +51,36 @@ impl Input {
 		self.delta_mouse = vec2(0.0, 0.0);
 	}
 
-	pub fn consume_keyboard(&mut self, event: KeyboardInput) {
-		if let Some(key) = self.key_from_scancode(event.scancode) {
-			match event.state {
-				ElementState::Pressed => if self.key_states[key] == KeyState::Up || self.key_states[key] == KeyState::Released {
-					self.key_states[key] = KeyState::Pressed;
-				}
-				ElementState::Released => if self.key_states[key] == KeyState::Down || self.key_states[key] == KeyState::Pressed {
-					self.key_states[key] = KeyState::Released;
-				}
-			}
-		}
-	}
-
-	pub fn consume_device(&mut self, event: DeviceEvent) {
+	pub fn consume_event(&mut self, event: Event) {
 		match event {
-			DeviceEvent::MouseMotion { delta } => {
-				self.delta_mouse += vec2(delta.0 as Real, delta.1 as Real);
+			Event::WindowEvent { event, .. } => match event {
+				WindowEvent::KeyboardInput { input, .. } => if let Some(key) = self.key_from_scancode(input.scancode) {
+					match input.state {
+						ElementState::Pressed => if self.key_states[key] == KeyState::Up || self.key_states[key] == KeyState::Released {
+							self.key_states[key] = KeyState::Pressed;
+						}
+						ElementState::Released => if self.key_states[key] == KeyState::Down || self.key_states[key] == KeyState::Pressed {
+							self.key_states[key] = KeyState::Released;
+						}
+					}
+				},
+				WindowEvent::MouseInput { button, state, .. } => if let Some(key) = self.key_from_mouse_button(button) {
+					match state {
+						ElementState::Pressed => if self.key_states[key] == KeyState::Up || self.key_states[key] == KeyState::Released {
+							self.key_states[key] = KeyState::Pressed;
+						}
+						ElementState::Released => if self.key_states[key] == KeyState::Down || self.key_states[key] == KeyState::Pressed {
+							self.key_states[key] = KeyState::Released;
+						}
+					}
+				}
+				_ => (),
+			},
+			Event::DeviceEvent { event, .. } => match event {
+				DeviceEvent::MouseMotion { delta } => {
+					self.delta_mouse += vec2(delta.0 as Real, delta.1 as Real);
+				},
+				_ => (),
 			},
 			_ => (),
 		}
@@ -80,12 +93,23 @@ impl Input {
 		}
 	}
 
+	pub fn delta_mouse(&self) -> Vector2 {
+		self.delta_mouse
+	}
+
 	fn key_from_scancode(&self, scancode: u32) -> Option<Key> {
 		match scancode {
 			13 => Some(Key::Forward),
 			0 => Some(Key::Left),
 			1 => Some(Key::Backward),
 			2 => Some(Key::Right),
+			_ => None,
+		}
+	}
+
+	fn key_from_mouse_button(&self, mouse_button: MouseButton) -> Option<Key> {
+		match mouse_button {
+			MouseButton::Right => Some(Key::LookAround),
 			_ => None,
 		}
 	}

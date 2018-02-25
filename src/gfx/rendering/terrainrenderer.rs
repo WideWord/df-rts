@@ -6,7 +6,6 @@ use std::ops::Deref;
 
 use ::gfx::scene::CameraRenderingParameters;
 use ::terrain::Terrain;
-use ::assets::AssetRef;
 use ::math::*;
 
 #[derive(Copy, Clone)]
@@ -102,9 +101,7 @@ impl TerrainRenderer {
 		}
 	}
 
-	pub fn draw<F: Surface>(&self, target: &mut F, draw_parameters: &DrawParameters, camera: &CameraRenderingParameters, object: &AssetRef<Terrain>) {
-		let terrain = object.asset.borrow();
-
+	pub fn draw<F: Surface>(&self, target: &mut F, draw_parameters: &DrawParameters, camera: &CameraRenderingParameters, terrain: &Terrain) {
 		let transform = camera.view_projection;
 
 		let map = terrain.map.asset.borrow();
@@ -113,6 +110,7 @@ impl TerrainRenderer {
 
 		let uniforms = uniform! {
 			transform: matrix4_to_array(transform),
+			scale: [terrain.scale.x, terrain.scale.y, terrain.scale.z],
 			map: map.deref(),
 			albedo: albedo.deref(),
 		};

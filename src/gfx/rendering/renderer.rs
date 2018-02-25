@@ -72,10 +72,12 @@ impl Renderer {
 
 			let scene = scene.borrow();
 
-			let maybe_terrain = scene.terrain();
+			for entity_ref in scene.get_mesh_instances() {
+				self.mesh_renderer.render(&mut target, &draw_parameters, &precalculated_camera, &entity_ref.0);
+			}
 
-			if let &Some(ref terrain) = maybe_terrain {
-				self.terrain_renderer.draw(&mut target, &draw_parameters, &precalculated_camera, &terrain);
+			if let Some(terrain) = scene.terrain() {
+				self.terrain_renderer.draw(&mut target, &draw_parameters, &precalculated_camera, &terrain.asset.borrow());
 			}
 		}
 

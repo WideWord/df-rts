@@ -1,7 +1,7 @@
 use glium::Texture2d;
 
-use ::assets::AssetRef;
+use ::assets::Asset;
 
 pub struct Material {
-	pub albedo: AssetRef<Texture2d>,
+	pub albedo: Asset<Texture2d>,
 }

@@ -1,7 +1,7 @@
 use glium::{VertexBuffer, IndexBuffer, Display};
 use glium::index::PrimitiveType;
 
-use ::assets::AssetRef;
+use ::assets::Asset;
 use super::Material;
 
 #[derive(Copy, Clone)]
@@ -16,12 +16,12 @@ implement_vertex!(MeshVertex, position, normal, uv);
 pub struct Mesh {
 	vertex_buffer: VertexBuffer<MeshVertex>,
 	index_buffer: IndexBuffer<u32>,
-	pub material: AssetRef<Material>,
+	pub material: Asset<Material>,
 }
 
 impl Mesh {
 
-	pub fn new(display: &Display, verticies: &[MeshVertex], indicies: &[u32], material: AssetRef<Material>) -> Self {
+	pub fn new(display: &Display, verticies: &[MeshVertex], indicies: &[u32], material: Asset<Material>) -> Self {
 		let vertex_buffer = VertexBuffer::new(display, verticies).unwrap();
 		let index_buffer = IndexBuffer::new(
 			display,

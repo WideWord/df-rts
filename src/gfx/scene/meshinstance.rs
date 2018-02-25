@@ -1,10 +1,10 @@
 use ::math::Spatial;
 use ::gfx::resources::Mesh;
-use ::assets::AssetRef;
+use ::assets::Asset;
 
 pub struct MeshInstance {
 	pub spatial: Spatial,
 	pub is_static: bool,
-	pub mesh: AssetRef<Mesh>,
+	pub mesh: Asset<Mesh>,
 }
 

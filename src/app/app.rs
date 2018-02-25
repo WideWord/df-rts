@@ -1,5 +1,4 @@
 use glium::glutin::{EventsLoop, Event, WindowEvent};
-use cgmath::{vec3};
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -10,8 +9,9 @@ use ::gfx::rendering::Renderer;
 use ::gfx::scene::Scene as GraphicsScene;
 use ::gfx::resources::{Material};
 use ::gfx::scene::MeshInstance;
-use ::math::Spatial;
-use ::assets::{AssetRef, load_texture, load_mesh};
+use ::math::*;
+use ::assets::Asset;
+use ::assets::util::*;
 use super::Input;
 use super::input;
 use ::terrain::Terrain;
@@ -54,20 +54,31 @@ impl App {
 		{
 			let scene = self.graphics_scene().clone().unwrap();
 
-			let texture = load_texture(self.renderer.get_display(), PathBuf::from("data/sand.jpg").as_path());
+				let texture = load_texture(self.renderer.get_display(), PathBuf::from("data/sand.jpg").as_path());
 
-			let material = AssetRef::from(Material {
-				albedo: texture,
-			});
-		
-			let map = load_texture(self.renderer.get_display(), PathBuf::from("data/terrain.png").as_path());
+				let material = Asset::asset(Material {
+					albedo: texture,
+				});
 
-			let terrain = AssetRef::from(Terrain::new(map));
+				let mesh = load_mesh(self.renderer.get_display(), PathBuf::from("data/monkey.dae").as_path(), material.clone());
 
-			terrain.asset.borrow_mut().materials.push(material);
+				let instance = MeshInstance {
+					spatial: Spatial::identity(),
+					is_static: false,
+					mesh: mesh,
+				};
 
-			scene.borrow_mut().set_terrain(terrain);
+				scene.borrow_mut().add_mesh_instance(instance);
+			
+				let map = load_texture(self.renderer.get_display(), PathBuf::from("data/terrain.png").as_path());
 
+				let terrain = Asset::asset(Terrain::new(map));
+
+				terrain.asset.borrow_mut().materials.push(material.clone());
+
+				scene.borrow_mut().set_terrain(terrain);
+			
+			
 		}
 		
 		while self.running {
@@ -80,6 +91,15 @@ impl App {
 			self.last_frame_time = SystemTime::now();
 
 			{
+				if self.input.is_key_down(input::Key::LookAround) {
+					let scene_ref = self.graphics_scene.clone().unwrap();
+					let mut scene = scene_ref.borrow_mut();
+					let camera = scene.camera_mut();
+					let delta_mouse = self.input.delta_mouse();
+
+					camera.spatial.rotation = Quaternion::from_angle_y(Rad(-delta_mouse.x * 0.01)) * camera.spatial.rotation * Quaternion::from_angle_x(Rad(-delta_mouse.y * 0.01));
+				}
+
 				let mut tr = vec3(0.0, 0.0, 0.0);
 				
 				if self.input.is_key_down(input::Key::Forward) {
@@ -107,14 +127,6 @@ impl App {
 		}
 	}
 
-	pub fn quit(&mut self) {
-		self.running = false
-	}
-
-	pub fn set_graphics_scene(&mut self, scene: Option<Rc<RefCell<GraphicsScene>>>) {
-		self.graphics_scene = scene;
-	}
-
 	pub fn graphics_scene(&self) -> Option<Rc<RefCell<GraphicsScene>>> {
 		self.graphics_scene.clone()
 	}
@@ -126,21 +138,10 @@ impl App {
 		let events_loop = self.events_loop.clone();
 
 		events_loop.borrow_mut().poll_events(|event| {
-			self.process_event(event);
+			self.input.consume_event(event);
 		});
 	}
 
-	fn process_event(&mut self, event: Event) {
-		match event {
-			Event::WindowEvent { event, .. } => match event {
-				WindowEvent::Closed => self.quit(),
-				WindowEvent::KeyboardInput { input, .. } => self.input.consume_keyboard(input),
-				_ => (),
-			},
-			Event::DeviceEvent { event, .. } => self.input.consume_device(event),
-			_ => (),
-		}
-	}
 
 	fn render_scene(&self) {
 		if let Some(ref scene) = self.graphics_scene {
