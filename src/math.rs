@@ -2,6 +2,7 @@ use cgmath;
 pub use cgmath::{One, Zero};
 
 pub type Real = f32;
+pub type Vector2 = cgmath::Vector2<Real>;
 pub type Vector3 = cgmath::Vector3<Real>;
 pub type Quaternion = cgmath::Quaternion<Real>;
 pub type Matrix3 = cgmath::Matrix3<Real>;

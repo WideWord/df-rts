@@ -4,6 +4,7 @@ use cgmath::{vec3};
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::path::PathBuf;
+use std::time::{SystemTime};
 
 use ::gfx::rendering::Renderer;
 use ::gfx::scene::Scene as GraphicsScene;
@@ -13,7 +14,7 @@ use ::math::Spatial;
 use ::assets::{AssetRef, load_texture, load_mesh};
 use super::Input;
 use super::input;
-use std::time::{SystemTime};
+use ::terrain::Terrain;
 
 pub struct App {
 	events_loop: Rc<RefCell<EventsLoop>>,
@@ -51,22 +52,22 @@ impl App {
 	pub fn run(&mut self) {
 
 		{
+			let scene = self.graphics_scene().clone().unwrap();
+
 			let texture = load_texture(self.renderer.get_display(), PathBuf::from("data/sand.jpg").as_path());
 
 			let material = AssetRef::from(Material {
 				albedo: texture,
 			});
+		
+			let map = load_texture(self.renderer.get_display(), PathBuf::from("data/terrain.png").as_path());
 
-			let mesh = load_mesh(self.renderer.get_display(), PathBuf::from("data/monkey.dae").as_path(), material);
+			let terrain = AssetRef::from(Terrain::new(map));
 
-			let instance = MeshInstance {
-				spatial: Spatial::identity(),
-				is_static: false,
-				mesh: mesh,
-			};
+			terrain.asset.borrow_mut().materials.push(material);
 
-			let scene = self.graphics_scene().clone().unwrap();
-			scene.borrow_mut().add_mesh_instance(instance);
+			scene.borrow_mut().set_terrain(terrain);
+
 		}
 		
 		while self.running {

@@ -4,7 +4,8 @@ use std::hash::{Hash, Hasher};
 
 
 use ::gfx::scene::{Camera, MeshInstance};
-use ::math::Spatial;
+use ::terrain::Terrain;
+use ::assets::AssetRef;
 
 #[derive(Clone)]
 pub struct MeshInstanceHandle(pub Rc<MeshInstance>);
@@ -28,6 +29,7 @@ impl Hash for MeshInstanceHandle {
 pub struct Scene {
 	camera: Camera,
 	mesh_instances: HashSet<MeshInstanceHandle>,
+	terrain: Option<AssetRef<Terrain>>,
 }
 
 impl Scene {
@@ -36,6 +38,7 @@ impl Scene {
 		Scene {
 			camera: Camera::new(),
 			mesh_instances: HashSet::new(),
+			terrain: None,
 		}
 	}
 
@@ -44,10 +47,6 @@ impl Scene {
 		self.mesh_instances.insert(handle.clone());
 
 		handle
-	}
-
-	pub fn remove_mesh_instance(&mut self, handle: MeshInstanceHandle) {
-		self.mesh_instances.remove(&handle);
 	}
 
 	pub fn get_mesh_instances(&self) -> &HashSet<MeshInstanceHandle> {
@@ -62,12 +61,12 @@ impl Scene {
 		return &mut self.camera
 	}
 
-	pub fn set_camera(&mut self, camera: &Camera) {
-		self.camera = *camera;
+	pub fn terrain(&self) -> &Option<AssetRef<Terrain>> {
+		&self.terrain
 	}
 
-	pub fn move_camera(&mut self, spatial: Spatial) {
-		self.camera.spatial = spatial;
+	pub fn set_terrain(&mut self, terrain: AssetRef<Terrain>) {
+		self.terrain = Some(terrain);
 	}
 
 }

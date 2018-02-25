@@ -5,13 +5,14 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use ::gfx::scene::{Scene, CameraRenderingParameters};
-use ::gfx::rendering::{MeshRenderer, GBuffer};
+use ::gfx::rendering::{MeshRenderer, TerrainRenderer, GBuffer};
 use ::gfx::lighting::LightRenderer;
 
 pub struct Renderer {
 	display: Display,
 
 	mesh_renderer: MeshRenderer,
+	terrain_renderer: TerrainRenderer,
 
 	g_buffer: GBuffer,
 
@@ -29,6 +30,7 @@ impl Renderer {
 		let display = Display::new(window, context, events_loop).unwrap();
 
 		let mesh_renderer = MeshRenderer::new(&display);
+		let terrain_renderer = TerrainRenderer::new(&display);
 
 		let light_renderer = LightRenderer::new(&display);
 
@@ -37,6 +39,7 @@ impl Renderer {
 		Renderer {
 			display: display,
 			mesh_renderer: mesh_renderer,
+			terrain_renderer: terrain_renderer,
 			g_buffer: g_buffer,
 			light_renderer: light_renderer,
 		}
@@ -67,8 +70,12 @@ impl Renderer {
 
 			let precalculated_camera = CameraRenderingParameters::new(scene.borrow().camera(), viewport);
 
-			for entity_ref in scene.borrow().get_mesh_instances() {
-				self.mesh_renderer.render(&mut target, &draw_parameters, &precalculated_camera, &entity_ref.0);
+			let scene = scene.borrow();
+
+			let maybe_terrain = scene.terrain();
+
+			if let &Some(ref terrain) = maybe_terrain {
+				self.terrain_renderer.draw(&mut target, &draw_parameters, &precalculated_camera, &terrain);
 			}
 		}
 
