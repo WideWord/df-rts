@@ -1,6 +1,6 @@
-use cgmath::{Matrix4, perspective, Deg};
+use cgmath::{perspective, Deg};
 
-use ::math::{Spatial, Real};
+use ::math::*;
 
 #[derive(Clone, Copy)]
 pub struct Camera {
@@ -23,21 +23,21 @@ impl Camera {
 
 }
 
-pub struct RenderingPrecalculatedCamera {
+pub struct CameraRenderingParameters {
 	pub spatial: Spatial,
-	pub projection: Matrix4<Real>,
-	pub view: Matrix4<Real>,
-	pub view_projection: Matrix4<Real>,
+	pub projection: Matrix4,
+	pub view: Matrix4,
+	pub view_projection: Matrix4,
 }
 
-impl RenderingPrecalculatedCamera {
+impl CameraRenderingParameters {
 
-	pub fn calculate(camera: &Camera, frame_size: (u32, u32)) -> Self {
+	pub fn new(camera: &Camera, frame_size: (u32, u32)) -> Self {
 		let projection = perspective(camera.fov_y, (frame_size.0 as Real) / (frame_size.1 as Real), camera.z_near, camera.z_far);
-		let view = Matrix4::from(camera.spatial.rotation.conjugate()) * Matrix4::from_translation(-camera.spatial.position);
+		let view = camera.spatial.inverse_transform_matrix();
 		let view_projection = projection * view;
 
-		RenderingPrecalculatedCamera {
+		CameraRenderingParameters {
 			spatial: camera.spatial,
 			projection: projection,
 			view: view,

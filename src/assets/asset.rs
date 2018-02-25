@@ -5,7 +5,7 @@ use std::cell::{RefCell};
 use std::rc::Rc;
 use std::vec::Vec;
 
-use ::gfx::{Mesh, MeshVertex, Material};
+use ::gfx::resources::{Mesh, MeshVertex, Material};
 
 #[derive(Clone)]
 pub struct AssetRef<T> {

@@ -1,7 +1,7 @@
 use glium::{Display, Program, Surface, VertexBuffer, IndexBuffer, DrawParameters};
 use glium::index::PrimitiveType;
 
-use ::gfx::GBuffer;
+use ::gfx::rendering::GBuffer;
 
 #[derive(Copy, Clone)]
 struct QuadVertex {

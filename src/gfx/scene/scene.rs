@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 
 
-use super::{Camera, MeshInstance};
+use ::gfx::scene::{Camera, MeshInstance};
 use ::math::Spatial;
 
 #[derive(Clone)]

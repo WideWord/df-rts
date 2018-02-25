@@ -1,5 +1,5 @@
 use ::math::Spatial;
-use ::gfx::Mesh;
+use ::gfx::resources::Mesh;
 use ::assets::AssetRef;
 
 pub struct MeshInstance {

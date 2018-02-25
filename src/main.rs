@@ -9,6 +9,7 @@ mod app;
 mod assets;
 mod gfx;
 mod math;
+mod terrain;
 
 use app::App;
 

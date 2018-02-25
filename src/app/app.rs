@@ -5,9 +5,9 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::path::PathBuf;
 
-use ::gfx::Renderer;
+use ::gfx::rendering::Renderer;
 use ::gfx::scene::Scene as GraphicsScene;
-use ::gfx::{Material};
+use ::gfx::resources::{Material};
 use ::gfx::scene::MeshInstance;
 use ::math::Spatial;
 use ::assets::{AssetRef, load_texture, load_mesh};

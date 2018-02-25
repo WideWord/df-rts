@@ -2,9 +2,7 @@ use cgmath;
 pub use cgmath::{One, Zero};
 
 pub type Real = f32;
-pub type Vector2 = cgmath::Vector2<Real>;
 pub type Vector3 = cgmath::Vector3<Real>;
-pub type Vector4 = cgmath::Vector4<Real>;
 pub type Quaternion = cgmath::Quaternion<Real>;
 pub type Matrix3 = cgmath::Matrix3<Real>;
 pub type Matrix4 = cgmath::Matrix4<Real>;
@@ -30,7 +28,7 @@ impl Spatial {
 		Matrix4::from_translation(self.position) * Matrix4::from(self.rotation)
 	}
 
-	pub fn inverse_transfrom_matrix(&self) -> Matrix4 {
+	pub fn inverse_transform_matrix(&self) -> Matrix4 {
 		Matrix4::from(self.rotation.conjugate()) * Matrix4::from_translation(-self.position)
 	}
 
