@@ -109,7 +109,7 @@ impl Input {
 
 	fn key_from_mouse_button(&self, mouse_button: MouseButton) -> Option<Key> {
 		match mouse_button {
-			MouseButton::Right => Some(Key::LookAround),
+			MouseButton::Left => Some(Key::LookAround),
 			_ => None,
 		}
 	}

@@ -51,34 +51,39 @@ impl App {
 
 	pub fn run(&mut self) {
 
-		{
-			let scene = self.graphics_scene().clone().unwrap();
+		if let Some(ref scene) = self.graphics_scene {
+			let mut scene = scene.borrow_mut();
 
-				let texture = load_texture(self.renderer.get_display(), PathBuf::from("data/sand.jpg").as_path());
+			let texture = load_texture(self.renderer.get_display(), PathBuf::from("data/sand.jpg").as_path());
 
-				let material = Asset::asset(Material {
-					albedo: texture,
-				});
+			let material = Asset::asset(Material {
+				albedo_map: texture,
+				roughness: 0.1,
+				metallic: 0.1,
+			});
 
-				let mesh = load_mesh(self.renderer.get_display(), PathBuf::from("data/monkey.dae").as_path(), material.clone());
+			let mesh = load_mesh(self.renderer.get_display(), PathBuf::from("data/monkey.dae").as_path(), material.clone());
 
-				let instance = MeshInstance {
-					spatial: Spatial::identity(),
-					is_static: false,
-					mesh: mesh,
-				};
+			let instance = MeshInstance {
+				spatial: Spatial::identity(),
+				is_static: false,
+				mesh: mesh,
+			};
 
-				scene.borrow_mut().add_mesh_instance(instance);
-			
-				let map = load_texture(self.renderer.get_display(), PathBuf::from("data/terrain.png").as_path());
+			scene.add_mesh_instance(instance);
+		
+			let map = load_texture(self.renderer.get_display(), PathBuf::from("data/terrain.png").as_path());
 
-				let terrain = Asset::asset(Terrain::new(map));
+			let terrain = Asset::asset(Terrain::new(map));
 
-				terrain.asset.borrow_mut().materials.push(material.clone());
+			terrain.asset.borrow_mut().materials.push(material.clone());
 
-				scene.borrow_mut().set_terrain(terrain);
-			
-			
+			scene.terrain = Some(terrain);
+
+			scene.sun = Some(::gfx::scene::Sun {
+				direction: vec3(0.0, -1.0, -0.2),
+				color: vec3(1.0, 1.0, 1.0),
+			});
 		}
 		
 		while self.running {
@@ -125,10 +130,6 @@ impl App {
 
 			self.render_scene();
 		}
-	}
-
-	pub fn graphics_scene(&self) -> Option<Rc<RefCell<GraphicsScene>>> {
-		self.graphics_scene.clone()
 	}
 
 	fn process_events(&mut self) {

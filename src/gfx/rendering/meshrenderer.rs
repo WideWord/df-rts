@@ -59,16 +59,16 @@ impl MeshRenderer {
 		}
 	}
 
-	pub fn render<F: Surface>(&self, target: &mut F, params: &RenderParameters, object: &MeshInstance) {
+	pub fn draw_mesh_instance<F: Surface>(&self, target: &mut F, params: &RenderParameters, object: &MeshInstance) {
 		let mesh = object.mesh.asset.borrow();
 		let (vertex_buffer, index_buffer) = mesh.get_buffers();
 
 		let model_transform = object.spatial.transform_matrix();
 
-		let transform = params.camera.view_projection * model_transform;
+		let transform = params.camera.view_projection_matrix * model_transform;
 
 		let material = mesh.material.asset.borrow();
-		let albedo = material.albedo.asset.borrow();
+		let albedo = material.albedo_map.asset.borrow();
 
 		let uniforms = uniform! {
 			transform: matrix4_to_array(transform),

@@ -114,12 +114,12 @@ impl TerrainRenderer {
 		}
 	}
 
-	pub fn render<Target: Surface>(&self, target: &mut Target, params: &RenderParameters, terrain: &Terrain) {
-		let transform = params.camera.view_projection;
+	pub fn draw_terrain<Target: Surface>(&self, target: &mut Target, params: &RenderParameters, terrain: &Terrain) {
+		let transform = params.camera.view_projection_matrix;
 
 		let map = terrain.map.asset.borrow();
 		let material = terrain.materials[0].asset.borrow();
-		let albedo = material.albedo.asset.borrow();
+		let albedo = material.albedo_map.asset.borrow();
 
 		let uniforms = uniform! {
 			u_transform: matrix4_to_array(transform),

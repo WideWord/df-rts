@@ -2,8 +2,8 @@ use glium::glutin::{EventsLoop, WindowBuilder, ContextBuilder};
 use glium::{Surface, Display, Rect, DrawParameters};
 
 use ::gfx::scene::{Scene, CameraRenderParameters};
-use ::gfx::rendering::{MeshRenderer, TerrainRenderer, GBuffer, RenderParameters};
-use ::gfx::lighting::LightRenderer;
+use ::gfx::rendering::{MeshRenderer, TerrainRenderer, GBuffer, RenderParameters, RenderPassType};
+use ::gfx::lighting::SunRenderer;
 
 pub struct Renderer {
 	display: Display,
@@ -13,7 +13,7 @@ pub struct Renderer {
 
 	g_buffer: GBuffer,
 
-	light_renderer: LightRenderer,
+	sun_renderer: SunRenderer,
 }
 
 impl Renderer {
@@ -29,7 +29,7 @@ impl Renderer {
 		let mesh_renderer = MeshRenderer::new(&display);
 		let terrain_renderer = TerrainRenderer::new(&display);
 
-		let light_renderer = LightRenderer::new(&display);
+		let sun_renderer = SunRenderer::new(&display);
 
 		let g_buffer = GBuffer::new(&display, (1024 * 2, 768 * 2));
 
@@ -38,7 +38,7 @@ impl Renderer {
 			mesh_renderer: mesh_renderer,
 			terrain_renderer: terrain_renderer,
 			g_buffer: g_buffer,
-			light_renderer: light_renderer,
+			sun_renderer: sun_renderer,
 		}
 	}
 
@@ -70,26 +70,33 @@ impl Renderer {
 			let render_parameters = RenderParameters {
 				camera: camera,
 				draw_parameters: draw_parameters.clone(),
+				pass_type: RenderPassType::GBuffer,
 			};
 
-			for entity_ref in scene.get_mesh_instances() {
-				self.mesh_renderer.render(&mut target, &render_parameters, &entity_ref.0);
-			}
-
-			if let Some(terrain) = scene.terrain() {
-				self.terrain_renderer.render(&mut target, &render_parameters, &terrain.asset.borrow());
-			}
+			self.draw_scene(&mut target, &render_parameters, scene);
 		}
 
  		{
 			let mut target = self.display.draw();
-			target.clear_color(0.0, 1.0, 1.0, 1.0);
+			target.clear_color(0.0, 0.0, 0.0, 1.0);
 
-			self.light_renderer.render(&mut target, &draw_parameters, &self.g_buffer);
+			if let Some(ref sun) = scene.sun {
+				self.sun_renderer.draw_sun_lighting(&mut target, &draw_parameters, &self.g_buffer, sun);
+			}
 
 			target.finish().unwrap();
 		}
 
+	}
+
+	fn draw_scene<Target: Surface>(&self, target: &mut Target, render_parameters: &RenderParameters, scene: &Scene) {
+		for entity_ref in scene.get_mesh_instances() {
+			self.mesh_renderer.draw_mesh_instance(target, &render_parameters, &entity_ref.0);
+		}
+
+		if let Some(ref terrain) = scene.terrain {
+			self.terrain_renderer.draw_terrain(target, &render_parameters, &terrain.asset.borrow());
+		}
 	}
 
 }

@@ -3,31 +3,39 @@ use cgmath::{perspective, Deg};
 use ::math::*;
 
 #[derive(Clone, Copy)]
+pub enum CameraProjection {
+	Ortho,
+	Perspective,
+}
+
+#[derive(Clone, Copy)]
 pub struct Camera {
 	pub spatial: Spatial,
 	pub z_near: Real,
 	pub z_far: Real,
 	pub fov_y: Deg<Real>,
+	pub size_y: Real,
+	pub projection: CameraProjection,
 }
 
-impl Camera {
-
-	pub fn new() -> Self {
+impl Default for Camera {
+	fn default() -> Self {
 		Camera {
 			spatial: Spatial::identity(),
 			z_near: 1.0,
 			z_far: 1000.0,
 			fov_y: Deg(65.0),
+			size_y: 1.0,
+			projection: CameraProjection::Perspective,
 		}
 	}
-
 }
 
 pub struct CameraRenderParameters {
 	pub spatial: Spatial,
-	pub projection: Matrix4,
-	pub view: Matrix4,
-	pub view_projection: Matrix4,
+	pub projection_matrix: Matrix4,
+	pub view_matrix: Matrix4,
+	pub view_projection_matrix: Matrix4,
 }
 
 impl CameraRenderParameters {
@@ -39,9 +47,9 @@ impl CameraRenderParameters {
 
 		CameraRenderParameters {
 			spatial: camera.spatial,
-			projection: projection,
-			view: view,
-			view_projection: view_projection,
+			projection_matrix: projection,
+			view_matrix: view,
+			view_projection_matrix: view_projection,
 		}
 	}
 
