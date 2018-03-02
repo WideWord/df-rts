@@ -57,9 +57,9 @@ impl App {
 			let texture = load_texture(self.renderer.get_display(), PathBuf::from("data/sand.jpg").as_path());
 
 			let material = Asset::asset(Material {
-				albedo_map: texture,
-				roughness: 0.1,
-				metallic: 0.1,
+				albedo_map: texture.clone(),
+				roughness_map: texture.clone(),
+				metallic_map: texture.clone(),
 			});
 
 			let mesh = load_mesh(self.renderer.get_display(), PathBuf::from("data/monkey.dae").as_path(), material.clone());

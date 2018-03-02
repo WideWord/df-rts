@@ -60,12 +60,13 @@ impl Renderer {
 			.. Default::default()
 		};
 
+		let camera = CameraRenderParameters::new(scene.camera(), viewport);
+
 		{
 			let mut target = self.g_buffer.framebuffer(&self.display);
 			target.clear_color(0.0, 0.0, 0.0, 1.0);
 			target.clear_depth(1.0);
 
-			let camera = CameraRenderParameters::new(scene.camera(), viewport);
 
 			let render_parameters = RenderParameters {
 				camera: camera,
@@ -81,7 +82,7 @@ impl Renderer {
 			target.clear_color(0.0, 0.0, 0.0, 1.0);
 
 			if let Some(ref sun) = scene.sun {
-				self.sun_renderer.draw_sun_lighting(&mut target, &draw_parameters, &self.g_buffer, sun);
+				self.sun_renderer.draw_sun_lighting(&mut target, &draw_parameters, &self.g_buffer, &camera, sun);
 			}
 
 			target.finish().unwrap();

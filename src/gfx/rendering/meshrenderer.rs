@@ -41,14 +41,16 @@ impl MeshRenderer {
 			in vec2 v_uv;
 			in vec3 v_normal;
 
-			uniform sampler2D albedo;
+			uniform sampler2D u_albedo_map;
+			uniform sampler2D u_roughness_map;
+			uniform sampler2D u_metallic_map;
 
 			out vec4 o_albedo;
 			out vec4 o_normal;
 
 			void main() {
-				o_albedo = texture(albedo, v_uv);
-				o_normal = vec4(v_normal, 1.0);
+				o_albedo = vec4(texture(u_albedo_map, v_uv).rgb, texture(u_metallic_map, v_uv).r);
+				o_normal = vec4(v_normal, texture(u_roughness_map, v_uv).r);
 			}
 		"#;
 
@@ -68,12 +70,16 @@ impl MeshRenderer {
 		let transform = params.camera.view_projection_matrix * model_transform;
 
 		let material = mesh.material.asset.borrow();
-		let albedo = material.albedo_map.asset.borrow();
+		let albedo_map = material.albedo_map.asset.borrow();
+		let roughness_map = material.roughness_map.asset.borrow();
+		let metallic_map = material.metallic_map.asset.borrow();
 
 		let uniforms = uniform! {
 			transform: matrix4_to_array(transform),
 			normal_transform: matrix3_to_array(object.spatial.rotation_matrix()),
-			albedo: albedo.deref(),
+			u_albedo_map: albedo_map.deref(),
+			u_roughness_map: roughness_map.deref(),
+			u_metallic_map: metallic_map.deref(),
 		};
 
 		let mut draw_parameters = params.draw_parameters.clone();

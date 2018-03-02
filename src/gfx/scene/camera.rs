@@ -31,11 +31,14 @@ impl Default for Camera {
 	}
 }
 
+#[derive(Copy, Clone)]
 pub struct CameraRenderParameters {
 	pub spatial: Spatial,
 	pub projection_matrix: Matrix4,
 	pub view_matrix: Matrix4,
 	pub view_projection_matrix: Matrix4,
+	pub inverse_view_matrix: Matrix4,
+	pub inverse_projection_matrix: Matrix4,
 }
 
 impl CameraRenderParameters {
@@ -50,6 +53,8 @@ impl CameraRenderParameters {
 			projection_matrix: projection,
 			view_matrix: view,
 			view_projection_matrix: view_projection,
+			inverse_view_matrix: view.inverse_transform().unwrap(),
+			inverse_projection_matrix: projection.inverse_transform().unwrap(),
 		}
 	}
 

@@ -36,12 +36,16 @@ impl GBuffer {
 		framebuffer
 	}
 
-	pub fn albedo_texture(&self) -> &Texture2d {
+	pub fn albedo_metallic_texture(&self) -> &Texture2d {
 		return &self.albedo_texture;
 	}
 
-	pub fn normal_texture(&self) -> &Texture2d {
+	pub fn normal_roughness_texture(&self) -> &Texture2d {
 		return &self.normal_texture;
+	}
+
+	pub fn depth_texture(&self) -> &DepthTexture2d {
+		return &self.depth_texture;
 	}
 
 }
