@@ -95,28 +95,11 @@ impl SunRenderer {
 			    return (1.0 / rim) * specular * G * D;
 			}
 
-			void main() {
-				vec4 albedo_metallic = texture(u_albedo_metallic_map, v_position);
-				vec4 normal_roughness = texture(u_normal_roughness_map, v_position);
-
-				vec3 albedo = albedo_metallic.rgb;
-				float metallic = 1.0;//albedo_metallic.a;
-				vec3 normal = normal_roughness.rgb * 2 - vec3(1, 1, 1);
-				float roughness = 0.5;//normal_roughness.a;
-
-				float depth = texture(u_depth_map, v_position).x;
-				vec4 clip_position = vec4(v_position * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
-				vec4 view_position = u_inverse_projection_matrix * clip_position;
-				view_position /= view_position.w;
-				vec3 position = (u_inverse_view_matrix * view_position).xyz;
-
-				// L - point to light
-				// N - point normal
-				// V - point to camera
-
-				vec3 L = -normalize(u_sun_direction);
-				vec3 N = normalize(normal);
-				vec3 V = normalize(u_camera_position - position);
+			// L - point to light
+			// N - point normal
+			// V - point to camera
+			vec3 pbr_lighting(in vec3 albedo, in float metallic, in float roughness, in vec3 N, in vec3 L, in vec3 V)
+			{
 				vec3 H = normalize(L + V);
 
 				// mix between metal and non-metal material, for non-metal
@@ -140,6 +123,30 @@ impl SunRenderer {
 			    vec3 diffuse_light = diffref * light_color;
 
 				vec3 result = diffuse_light * mix(albedo, vec3(0.0), metallic) + reflected_light;
+
+				return result;
+			}
+
+			void main() {
+				vec4 albedo_metallic = texture(u_albedo_metallic_map, v_position);
+				vec4 normal_roughness = texture(u_normal_roughness_map, v_position);
+
+				vec3 albedo = albedo_metallic.rgb;
+				float metallic = 0.0;//albedo_metallic.a;
+				vec3 normal = normal_roughness.rgb * 2 - vec3(1, 1, 1);
+				float roughness = 0.5;//normal_roughness.a;
+
+				float depth = texture(u_depth_map, v_position).x;
+				vec4 clip_position = vec4(v_position * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+				vec4 view_position = u_inverse_projection_matrix * clip_position;
+				view_position /= view_position.w;
+				vec3 position = (u_inverse_view_matrix * view_position).xyz;
+
+				vec3 L = -normalize(u_sun_direction);
+				vec3 N = normalize(normal);
+				vec3 V = normalize(u_camera_position - position);
+				
+				vec3 result = pbr_lighting(albedo, metallic, roughness, N, L, V);
 
 				color = vec4(result, 1);
 			}
