@@ -29,6 +29,7 @@ impl Default for KeyState {
 pub struct Input {
 	key_states: EnumMap<Key, KeyState>,
 	delta_mouse: Vector2,
+	is_window_closed: bool,
 }
 
 impl Input {
@@ -37,6 +38,7 @@ impl Input {
 		Input {
 			key_states: EnumMap::default(),
 			delta_mouse: vec2(0.0, 0.0),
+			is_window_closed: false,
 		}
 	}
 
@@ -73,7 +75,8 @@ impl Input {
 							self.key_states[key] = KeyState::Released;
 						}
 					}
-				}
+				},
+				WindowEvent::Closed => self.is_window_closed = true,
 				_ => (),
 			},
 			Event::DeviceEvent { event, .. } => match event {
@@ -112,6 +115,10 @@ impl Input {
 			MouseButton::Left => Some(Key::LookAround),
 			_ => None,
 		}
+	}
+
+	pub fn is_window_closed(&self) -> bool {
+		self.is_window_closed
 	}
 
 }

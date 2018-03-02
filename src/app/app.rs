@@ -84,12 +84,12 @@ impl App {
 			scene.terrain = Some(terrain);
 */
 			scene.sun = Some(::gfx::scene::Sun {
-				direction: vec3(0.0, -1.0, -0.2),
+				direction: vec3(1.0, -0.1, -0.1),
 				color: vec3(1.0, 1.0, 1.0),
 			});
 		}
 		
-		while self.running {
+		while !self.input.is_window_closed() {
 
 
 			self.process_events();
