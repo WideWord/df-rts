@@ -45,6 +45,7 @@ impl SunRenderer {
 			uniform sampler2D u_depth_map;
 			uniform vec3 u_sun_direction;
 			uniform vec3 u_sun_color;
+			uniform vec3 u_camera_position;
 			uniform mat4 u_inverse_projection_matrix;
 			uniform mat4 u_inverse_view_matrix;
 
@@ -99,9 +100,9 @@ impl SunRenderer {
 				vec4 normal_roughness = texture(u_normal_roughness_map, v_position);
 
 				vec3 albedo = albedo_metallic.rgb;
-				float metallic = albedo_metallic.a;
+				float metallic = 1.0;//albedo_metallic.a;
 				vec3 normal = normal_roughness.rgb * 2 - vec3(1, 1, 1);
-				float roughness = normal_roughness.a;
+				float roughness = 0.5;//normal_roughness.a;
 
 				float depth = texture(u_depth_map, v_position).x;
 				vec4 clip_position = vec4(v_position * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
@@ -115,7 +116,7 @@ impl SunRenderer {
 
 				vec3 L = -normalize(u_sun_direction);
 				vec3 N = normalize(normal);
-				vec3 V = -normalize(view_position.xyz);
+				vec3 V = normalize(u_camera_position - position);
 				vec3 H = normalize(L + V);
 
 				// mix between metal and non-metal material, for non-metal
@@ -179,6 +180,7 @@ impl SunRenderer {
 			u_depth_map: g_buffer.depth_texture(),
 			u_sun_direction: [sun.direction.x, sun.direction.y, sun.direction.z],
 			u_sun_color: [sun.color.x, sun.color.y, sun.color.z],
+			u_camera_position: [camera.spatial.position.x, camera.spatial.position.y, camera.spatial.position.z],
 
 			u_inverse_projection_matrix: matrix4_to_array(camera.inverse_projection_matrix),
 			u_inverse_view_matrix: matrix4_to_array(camera.inverse_view_matrix),

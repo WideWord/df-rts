@@ -60,8 +60,8 @@ impl App {
 
 
 			let material = Asset::asset(Material {
-				albedo_map: white.clone(),
-				roughness_map: white.clone(),
+				albedo_map: sand.clone(),
+				roughness_map: black.clone(),
 				metallic_map: white.clone(),
 			});
 
