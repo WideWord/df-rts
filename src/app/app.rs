@@ -57,11 +57,11 @@ impl App {
 			let sand = load_texture(self.renderer.get_display(), PathBuf::from("data/sand.jpg").as_path());
 			let white = load_texture(self.renderer.get_display(), PathBuf::from("data/white.png").as_path());
 			let black = load_texture(self.renderer.get_display(), PathBuf::from("data/black.png").as_path());
-
+			let gray = load_texture(self.renderer.get_display(), PathBuf::from("data/gray.png").as_path());
 
 			let material = Asset::asset(Material {
 				albedo_map: sand.clone(),
-				roughness_map: black.clone(),
+				roughness_map: gray.clone(),
 				metallic_map: white.clone(),
 			});
 
@@ -86,6 +86,7 @@ impl App {
 			scene.sun = Some(::gfx::scene::Sun {
 				direction: vec3(1.0, -0.1, -0.1),
 				color: vec3(1.0, 1.0, 1.0),
+				render_resources: RefCell::new(None),
 			});
 		}
 		

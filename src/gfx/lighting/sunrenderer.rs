@@ -1,4 +1,5 @@
 use glium::{Display, Program, Surface, VertexBuffer, IndexBuffer, DrawParameters};
+use glium::texture::DepthTexture2d;
 use glium::index::PrimitiveType;
 
 use ::gfx::rendering::GBuffer;
@@ -48,6 +49,8 @@ impl SunRenderer {
 			uniform vec3 u_camera_position;
 			uniform mat4 u_inverse_projection_matrix;
 			uniform mat4 u_inverse_view_matrix;
+			uniform sampler2D u_shadow_map;
+			uniform mat4 u_shadow_map_view_projection_matrix;
 
 			out vec4 color;
 
@@ -98,7 +101,7 @@ impl SunRenderer {
 			// L - point to light
 			// N - point normal
 			// V - point to camera
-			vec3 pbr_lighting(in vec3 albedo, in float metallic, in float roughness, in vec3 N, in vec3 L, in vec3 V)
+			vec3 pbr_lighting(in vec3 albedo, in float metallic, in float roughness, in vec3 N, in vec3 L, in vec3 V, in vec3 light_color)
 			{
 				vec3 H = normalize(L + V);
 
@@ -118,7 +121,6 @@ impl SunRenderer {
 
 			    vec3 diffref = (vec3(1.0) - specfresnel) * phong_diffuse() * NdL;
 			    
-			    vec3 light_color = vec3(1.0);
 			    vec3 reflected_light = specref * light_color;
 			    vec3 diffuse_light = diffref * light_color;
 
@@ -140,9 +142,9 @@ impl SunRenderer {
 				vec4 normal_roughness = texture(u_normal_roughness_map, v_position);
 
 				vec3 albedo = albedo_metallic.rgb;
-				float metallic = 0.0;//albedo_metallic.a;
+				float metallic = albedo_metallic.a;
 				vec3 normal = normal_roughness.rgb * 2 - vec3(1, 1, 1);
-				float roughness = 0.5;//normal_roughness.a;
+				float roughness = normal_roughness.a;
 
 				float depth = texture(u_depth_map, v_position).x;
 
@@ -152,9 +154,13 @@ impl SunRenderer {
 				vec3 N = normalize(normal);
 				vec3 V = normalize(u_camera_position - position);
 				
-				vec3 result = pbr_lighting(albedo, metallic, roughness, N, L, V);
+				vec3 result = pbr_lighting(albedo, metallic, roughness, N, L, V, u_sun_color);
 
-				color = vec4(result, 1);
+				vec2 shadow_map_coord = (u_shadow_map_view_projection_matrix * vec4(position, 1.0)).xy;
+				float lighted_surface_dist = texture(u_shadow_map, shadow_map_coord).r * 999.0 + 1;
+				float current_surface_dist = length(u_camera_position - position) + 0.01;
+
+				color = vec4(result * (current_surface_dist > lighted_surface_dist ? 1.0 : 0.4), 1);
 			}
 		"#;
 
@@ -185,7 +191,16 @@ impl SunRenderer {
 		}
 	}
 
-	pub fn draw_sun_lighting<F: Surface>(&self, target: &mut F, draw_parameters: &DrawParameters, g_buffer: &GBuffer, camera: &CameraRenderParameters, sun: &Sun) {
+	pub fn draw_sun_lighting<F: Surface>(
+		&self, 
+		target: &mut F, 
+		draw_parameters: &DrawParameters,
+		 g_buffer: &GBuffer, 
+		 camera: &CameraRenderParameters, 
+		 sun: &Sun, 
+		 shadow_map: &DepthTexture2d, 
+		 shadow_map_view_projection_matrix: Matrix4
+	) {
 
 		let uniforms = uniform! {
 			u_albedo_metallic_map: g_buffer.albedo_metallic_texture(),
@@ -197,6 +212,9 @@ impl SunRenderer {
 
 			u_inverse_projection_matrix: matrix4_to_array(camera.inverse_projection_matrix),
 			u_inverse_view_matrix: matrix4_to_array(camera.inverse_view_matrix),
+
+			u_shadow_map: shadow_map,
+			u_shadow_map_view_projection_matrix: matrix4_to_array(shadow_map_view_projection_matrix),
 		};
 
 		target.draw(&self.vertex_buffer, &self.index_buffer, &self.shader, &uniforms, draw_parameters).unwrap();

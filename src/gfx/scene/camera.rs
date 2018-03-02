@@ -18,6 +18,18 @@ pub struct Camera {
 	pub projection: CameraProjection,
 }
 
+impl Camera {
+
+	pub fn ortho(size_y: Real) -> Self {
+		Camera {
+			projection: CameraProjection::Ortho,
+			size_y: size_y,
+			.. Default::default()
+		}
+	}
+
+}
+
 impl Default for Camera {
 	fn default() -> Self {
 		Camera {

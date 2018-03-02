@@ -4,60 +4,83 @@ use glium::draw_parameters::DepthTest;
 use std::ops::Deref;
 
 use ::gfx::scene::MeshInstance;
-use ::gfx::rendering::RenderParameters;
+use ::gfx::rendering::{RenderParameters, RenderPassType};
 use ::math::*;
 
 pub struct MeshRenderer {
 	shader: Program,
+	shadow_map_shader: Program,
 }
 
 impl MeshRenderer {
 
 	pub fn new(display: &Display) -> Self {
-		let vertex_shader_src = r#"
-			#version 140
-
-			in vec3 position;
-			in vec3 normal;
-			in vec2 uv;
-
-			uniform mat3 normal_transform;
-			uniform mat4 transform;
-
-			out vec3 v_normal;
-			out vec2 v_uv;
-
-			void main() {
-				gl_Position = transform * vec4(position, 1.0);
-				v_uv = uv;
-				vec3 world_normal = normal_transform * normalize(normal);
-				v_normal = (world_normal + vec3(1, 1, 1)) * 0.5;
-			}
-		"#;
-
-		let fragment_shader_src = r#"
-			#version 140
-
-			in vec2 v_uv;
-			in vec3 v_normal;
-
-			uniform sampler2D u_albedo_map;
-			uniform sampler2D u_roughness_map;
-			uniform sampler2D u_metallic_map;
-
-			out vec4 o_albedo;
-			out vec4 o_normal;
-
-			void main() {
-				o_albedo = vec4(texture(u_albedo_map, v_uv).rgb, texture(u_metallic_map, v_uv).r);
-				o_normal = vec4(v_normal, texture(u_roughness_map, v_uv).r);
-			}
-		"#;
-
-		let shader = Program::from_source(display, vertex_shader_src, fragment_shader_src, None).unwrap();
-
 		MeshRenderer {
-			shader: shader,
+			shader: {
+				let vertex_shader_src = r#"
+					#version 140
+
+					in vec3 position;
+					in vec3 normal;
+					in vec2 uv;
+
+					uniform mat3 normal_transform;
+					uniform mat4 transform;
+
+					out vec3 v_normal;
+					out vec2 v_uv;
+
+					void main() {
+						gl_Position = transform * vec4(position, 1.0);
+						v_uv = uv;
+						vec3 world_normal = normal_transform * normalize(normal);
+						v_normal = (world_normal + vec3(1, 1, 1)) * 0.5;
+					}
+				"#;
+
+				let fragment_shader_src = r#"
+					#version 140
+
+					in vec2 v_uv;
+					in vec3 v_normal;
+
+					uniform sampler2D u_albedo_map;
+					uniform sampler2D u_roughness_map;
+					uniform sampler2D u_metallic_map;
+
+					out vec4 o_albedo;
+					out vec4 o_normal;
+
+					void main() {
+						o_albedo = vec4(texture(u_albedo_map, v_uv).rgb, texture(u_metallic_map, v_uv).r);
+						o_normal = vec4(v_normal, texture(u_roughness_map, v_uv).r);
+					}
+				"#;
+
+				Program::from_source(display, vertex_shader_src, fragment_shader_src, None).unwrap()
+			},
+
+			shadow_map_shader: {
+				let vertex_shader_src = r#"
+					#version 140
+
+					in vec3 position;
+
+					uniform mat4 transform;
+
+					void main() {
+						gl_Position = transform * vec4(position, 1.0);
+					}
+				"#;
+
+				let fragment_shader_src = r#"
+					#version 140
+
+					void main() {}
+				"#;
+
+				Program::from_source(display, vertex_shader_src, fragment_shader_src, None).unwrap()
+			},
 		}
 	}
 
@@ -90,8 +113,12 @@ impl MeshRenderer {
         	.. Default::default()
     	};
 
+    	let program = match params.pass_type {
+    		RenderPassType::GBuffer => &self.shader,
+    		RenderPassType::ShadowMap => &self.shadow_map_shader,
+    	};
 
-		target.draw(vertex_buffer, index_buffer, &self.shader, &uniforms, &draw_parameters).unwrap();
+		target.draw(vertex_buffer, index_buffer, program, &uniforms, &draw_parameters).unwrap();
 	}
 
 }
