@@ -54,15 +54,18 @@ impl App {
 		if let Some(ref scene) = self.graphics_scene {
 			let mut scene = scene.borrow_mut();
 
-			let texture = load_texture(self.renderer.get_display(), PathBuf::from("data/sand.jpg").as_path());
+			let sand = load_texture(self.renderer.get_display(), PathBuf::from("data/sand.jpg").as_path());
+			let white = load_texture(self.renderer.get_display(), PathBuf::from("data/white.png").as_path());
+			let black = load_texture(self.renderer.get_display(), PathBuf::from("data/black.png").as_path());
+
 
 			let material = Asset::asset(Material {
-				albedo_map: texture.clone(),
-				roughness_map: texture.clone(),
-				metallic_map: texture.clone(),
+				albedo_map: white.clone(),
+				roughness_map: white.clone(),
+				metallic_map: white.clone(),
 			});
 
-			let mesh = load_mesh(self.renderer.get_display(), PathBuf::from("data/monkey.dae").as_path(), material.clone());
+			let mesh = load_mesh(self.renderer.get_display(), PathBuf::from("data/plane.dae").as_path(), material.clone());
 
 			let instance = MeshInstance {
 				spatial: Spatial::identity(),
@@ -71,7 +74,7 @@ impl App {
 			};
 
 			scene.add_mesh_instance(instance);
-		
+		/*
 			let map = load_texture(self.renderer.get_display(), PathBuf::from("data/terrain.png").as_path());
 
 			let terrain = Asset::asset(Terrain::new(map));
@@ -79,7 +82,7 @@ impl App {
 			terrain.asset.borrow_mut().materials.push(material.clone());
 
 			scene.terrain = Some(terrain);
-
+*/
 			scene.sun = Some(::gfx::scene::Sun {
 				direction: vec3(0.0, -1.0, -0.2),
 				color: vec3(1.0, 1.0, 1.0),
