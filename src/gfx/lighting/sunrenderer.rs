@@ -127,6 +127,14 @@ impl SunRenderer {
 				return result;
 			}
 
+			vec3 position_from_depth(in float depth, in mat4 inverse_projection_matrix, in mat4 inverse_view_matrix) {
+				vec4 clip_position = vec4(v_position * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+				vec4 view_position = inverse_projection_matrix * clip_position;
+				view_position /= view_position.w;
+				vec3 position = (inverse_view_matrix * view_position).xyz;
+				return position;
+			}
+
 			void main() {
 				vec4 albedo_metallic = texture(u_albedo_metallic_map, v_position);
 				vec4 normal_roughness = texture(u_normal_roughness_map, v_position);
@@ -137,10 +145,8 @@ impl SunRenderer {
 				float roughness = 0.5;//normal_roughness.a;
 
 				float depth = texture(u_depth_map, v_position).x;
-				vec4 clip_position = vec4(v_position * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
-				vec4 view_position = u_inverse_projection_matrix * clip_position;
-				view_position /= view_position.w;
-				vec3 position = (u_inverse_view_matrix * view_position).xyz;
+
+				vec3 position = position_from_depth(depth, u_inverse_projection_matrix, u_inverse_view_matrix);
 
 				vec3 L = -normalize(u_sun_direction);
 				vec3 N = normalize(normal);
