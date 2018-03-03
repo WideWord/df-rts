@@ -18,7 +18,6 @@ use ::terrain::Terrain;
 
 pub struct App {
 	events_loop: Rc<RefCell<EventsLoop>>,
-	running: bool,
 	input: Input,
 	last_frame_time: SystemTime,
 	delta_time: f32,
@@ -38,7 +37,6 @@ impl App {
 
 		App {
 			events_loop: events_loop,
-			running: true,
 			input: Input::new(),
 			last_frame_time: SystemTime::now(),
 			delta_time: 0.0,
