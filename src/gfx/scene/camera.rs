@@ -1,4 +1,4 @@
-use cgmath::{perspective, Deg};
+use cgmath::{perspective, ortho, Deg};
 
 use ::math::*;
 
@@ -56,7 +56,15 @@ pub struct CameraRenderParameters {
 impl CameraRenderParameters {
 
 	pub fn new(camera: &Camera, frame_size: (u32, u32)) -> Self {
-		let projection = perspective(camera.fov_y, (frame_size.0 as Real) / (frame_size.1 as Real), camera.z_near, camera.z_far);
+		let projection = match camera.projection {
+			CameraProjection::Ortho => {
+				let ys = camera.size_y * 0.5;
+				let xs = ys / (frame_size.1 as Real) * (frame_size.0 as Real) * 0.5;
+				ortho(xs, -xs, -ys, ys, camera.z_near, camera.z_far)
+			}
+			CameraProjection::Perspective => perspective(camera.fov_y, (frame_size.0 as Real) / (frame_size.1 as Real), camera.z_near, camera.z_far),
+		};
+
 		let view = camera.spatial.inverse_transform_matrix();
 		let view_projection = projection * view;
 

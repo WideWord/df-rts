@@ -84,7 +84,7 @@ impl App {
 			scene.terrain = Some(terrain);
 */
 			scene.sun = Some(::gfx::scene::Sun {
-				direction: vec3(1.0, -0.1, -0.1),
+				direction: vec3(1.0, -0.3, -0.1),
 				color: vec3(1.0, 1.0, 1.0),
 				render_resources: RefCell::new(None),
 			});

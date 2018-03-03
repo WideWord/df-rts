@@ -156,11 +156,16 @@ impl SunRenderer {
 				
 				vec3 result = pbr_lighting(albedo, metallic, roughness, N, L, V, u_sun_color);
 
-				vec2 shadow_map_coord = (u_shadow_map_view_projection_matrix * vec4(position, 1.0)).xy;
-				float lighted_surface_dist = texture(u_shadow_map, shadow_map_coord).r * 999.0 + 1;
-				float current_surface_dist = length(u_camera_position - position) + 0.01;
+				vec3 shadow_map_coord = ((u_shadow_map_view_projection_matrix * vec4(position, 1.0)).xyz + vec3(1.0)) * 0.5;
+				float lighted_surface_dist = texture(u_shadow_map, shadow_map_coord.xy).r;
+				float current_surface_dist = shadow_map_coord.z - 0.001;
+				float shadow = (current_surface_dist < lighted_surface_dist 
+				|| shadow_map_coord.x < 0.0 
+				|| shadow_map_coord.x > 1.0
+				|| shadow_map_coord.y > 1.0
+				|| shadow_map_coord.y < 0.0 ? 1.0 : 0.0);
 
-				color = vec4(result * (current_surface_dist > lighted_surface_dist ? 1.0 : 0.4), 1);
+				color = vec4(result * shadow, 1);
 			}
 		"#;
 

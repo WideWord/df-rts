@@ -1,5 +1,5 @@
 use glium::glutin::{EventsLoop, WindowBuilder, ContextBuilder};
-use glium::{Surface, Display, Rect, DrawParameters, Texture2d};
+use glium::{Surface, Display, Rect, DrawParameters, Texture2d, SyncFence};
 use glium::texture::DepthTexture2d;
 use glium::framebuffer::MultiOutputFrameBuffer;
 
@@ -66,7 +66,7 @@ impl Renderer {
 		};
 
 		let camera = CameraRenderParameters::new(scene.camera(), viewport);
-
+		
 		{
 			let mut target = self.g_buffer.framebuffer(&self.display);
 			target.clear_color(0.0, 0.0, 0.0, 1.0);
@@ -88,23 +88,34 @@ impl Renderer {
 
 			if let Some(ref sun) = scene.sun {
 
-				let shadow_map = DepthTexture2d::empty(&self.display, 1028, 1028).unwrap();
+				let shadow_map = DepthTexture2d::empty(&self.display, 1024, 1024).unwrap();
 
 				let mut shadow_map_target = MultiOutputFrameBuffer::with_depth_buffer(&self.display, ::std::iter::empty::<(&str, &Texture2d)>(), &shadow_map).unwrap();
 				shadow_map_target.clear_depth(1.0);
 
 				let mut shadow_camera = Camera::ortho(50.0);
-				shadow_camera.spatial.rotation = Quaternion::look_at(sun.direction, vec3(0.0, 1.0, 0.0));
-				shadow_camera.spatial.position = -sun.direction.normalize() * 500.0;
-				let shadow_camera_params = CameraRenderParameters::new(&shadow_camera, viewport);
+				shadow_camera.spatial.rotation = Quaternion::look_at(-sun.direction, vec3(0.0, 0.0, 1.0));
+				shadow_camera.spatial.position = -sun.direction.normalize() * 100.0;
+				let shadow_camera_params = CameraRenderParameters::new(&shadow_camera, (1024, 1024));
+
+				let mut shadow_draw_parameters = draw_parameters.clone();
+				shadow_draw_parameters.viewport = Some(Rect {
+					left: 0,
+					bottom: 0,
+					height: 1024,
+					width: 1024,
+				});
 
 				let shadow_render_parameters = RenderParameters {
 					camera: shadow_camera_params,
-					draw_parameters: draw_parameters.clone(),
+					draw_parameters: shadow_draw_parameters,
 					pass_type: RenderPassType::ShadowMap,
 				};
 
 				self.draw_scene(&mut shadow_map_target, &shadow_render_parameters, scene);
+
+				let fence = SyncFence::new(&self.display).unwrap();
+				fence.wait();
 
 				self.sun_renderer.draw_sun_lighting(&mut target, &draw_parameters, &self.g_buffer, &camera, sun, &shadow_map, shadow_camera_params.view_projection_matrix);
 			}
