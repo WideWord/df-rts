@@ -54,15 +54,17 @@ impl App {
 		if let Some(ref scene) = self.graphics_scene {
 			let mut scene = scene.borrow_mut();
 
-			let sand = load_texture(self.renderer.get_display(), PathBuf::from("data/sand.jpg").as_path());
+			let rusty_albedo = load_texture(self.renderer.get_display(), PathBuf::from("data/rusty/albedo.png").as_path());
+			let rusty_metallic = load_texture(self.renderer.get_display(), PathBuf::from("data/rusty/metallic.png").as_path());
+
 			let white = load_texture(self.renderer.get_display(), PathBuf::from("data/white.png").as_path());
 			let black = load_texture(self.renderer.get_display(), PathBuf::from("data/black.png").as_path());
 			let gray = load_texture(self.renderer.get_display(), PathBuf::from("data/gray.png").as_path());
 
 			let material = Asset::asset(Material {
-				albedo_map: sand.clone(),
+				albedo_map: rusty_albedo.clone(),
 				roughness_map: gray.clone(),
-				metallic_map: white.clone(),
+				metallic_map: rusty_metallic.clone(),
 			});
 
 			let mesh = load_mesh(self.renderer.get_display(), PathBuf::from("data/plane.dae").as_path(), material.clone());
@@ -84,7 +86,7 @@ impl App {
 			scene.terrain = Some(terrain);
 */
 			scene.sun = Some(::gfx::scene::Sun {
-				direction: vec3(1.0, -0.3, -0.1),
+				direction: vec3(0.5, -0.5, 0.0),
 				color: vec3(1.0, 1.0, 1.0),
 				render_resources: RefCell::new(None),
 			});
