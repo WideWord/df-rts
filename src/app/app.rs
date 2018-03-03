@@ -54,17 +54,16 @@ impl App {
 		if let Some(ref scene) = self.graphics_scene {
 			let mut scene = scene.borrow_mut();
 
-			let rusty_albedo = load_texture(self.renderer.get_display(), PathBuf::from("data/rusty/albedo.png").as_path());
-			let rusty_metallic = load_texture(self.renderer.get_display(), PathBuf::from("data/rusty/metallic.png").as_path());
+			let sand = load_texture(self.renderer.get_display(), PathBuf::from("data/sand.jpg").as_path());
 
 			let white = load_texture(self.renderer.get_display(), PathBuf::from("data/white.png").as_path());
 			let black = load_texture(self.renderer.get_display(), PathBuf::from("data/black.png").as_path());
 			let gray = load_texture(self.renderer.get_display(), PathBuf::from("data/gray.png").as_path());
 
 			let material = Asset::asset(Material {
-				albedo_map: rusty_albedo.clone(),
+				albedo_map: sand.clone(),
 				roughness_map: gray.clone(),
-				metallic_map: rusty_metallic.clone(),
+				metallic_map: white.clone(),
 			});
 
 			let mesh = load_mesh(self.renderer.get_display(), PathBuf::from("data/plane.dae").as_path(), material.clone());
