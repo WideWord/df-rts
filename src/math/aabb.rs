@@ -20,11 +20,10 @@ impl AABB3 {
 			max: center + half_size,
 		}
 	}
-/*
-	pub fn contains(&self, point: Vector3) -> bool {
+
+	pub fn contains_xz(&self, point: Vector3) -> bool {
 	 	point.x >= self.min.x && point.x <= self.max.x &&
-		point.y >= self.min.y && point.y <= self.max.y &&
 		point.z >= self.min.z && point.z <= self.max.z
-	}*/
+	}
 
 }

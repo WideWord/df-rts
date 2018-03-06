@@ -3,9 +3,10 @@ use glium::index::PrimitiveType;
 use glium::draw_parameters::{DepthTest, PolygonMode};
 
 use std::ops::Deref;
+use std::collections::VecDeque;
 
 use ::gfx::rendering::RenderParams;
-use ::gfx::terrain::TerrainRenderTree;
+use ::gfx::terrain::RenderNode;
 use ::terrain::Terrain;
 use ::math::*;
 
@@ -219,51 +220,58 @@ impl TerrainRenderer {
 
 	pub fn draw_terrain<Target: Surface>(&self, target: &mut Target, params: &RenderParams, terrain: &Terrain) {
 
-		let tree = TerrainRenderTree::build(params, terrain);
+		let nodes = RenderNode::build_tree(terrain, &params.camera);
 
-		for node in tree.draw_iter() {
-			let transform = params.camera.view_projection_matrix;
-
-			let map = terrain.map.asset.borrow();
-			let material = terrain.materials[0].asset.borrow();
-			let albedo = material.albedo_map.asset.borrow();
-
-			let uniforms = uniform! {
-				u_transform: matrix4_to_array(transform),
-				u_scale: [terrain.scale.x, terrain.scale.y, terrain.scale.z],
-				u_map: map.deref(),
-				u_albedo_map: albedo.deref(),
-				u_lod_offset: [node.offset.x, node.offset.y],
-				u_lod_scale: node.scale,
-				u_lines_highlight: 0.0 as Real,
-			};
-
-			let mut draw_parameters = params.draw_parameters.clone();
-
-			draw_parameters.depth = Depth {
-	        	test: DepthTest::IfLess,
-	        	write: true,
-	        	.. Default::default()
-	    	};
-
-			target.draw(&self.vertex_buffer, &self.index_buffers[node.seam_config as usize], &self.shader, &uniforms, &draw_parameters).unwrap();
-
-			draw_parameters.depth = Default::default();
-
-	   		draw_parameters.polygon_mode = PolygonMode::Line;
-
-			let uniforms = uniform! {
-				u_transform: matrix4_to_array(transform),
-				u_scale: [terrain.scale.x, terrain.scale.y, terrain.scale.z],
-				u_map: map.deref(),
-				u_albedo_map: albedo.deref(),
-				u_lod_offset: [node.offset.x, node.offset.y],
-				u_lod_scale: node.scale,
-				u_lines_highlight: 1.0 as Real,
-			};
-
-			target.draw(&self.vertex_buffer, &self.index_buffers[node.seam_config as usize], &self.shader, &uniforms, &draw_parameters).unwrap();
+		for ref node in nodes {
+			self.draw_terrain_node(target, params, terrain, node);
 		}
 	}
+
+	fn draw_terrain_node<Target: Surface>(&self, target: &mut Target, params: &RenderParams, terrain: &Terrain, node: &RenderNode) {
+		let transform = params.camera.view_projection_matrix;
+
+		let map = terrain.map.asset.borrow();
+		let material = terrain.materials[0].asset.borrow();
+		let albedo = material.albedo_map.asset.borrow();
+
+		let inv_lod = 1.0 / node.lod as Real;
+
+		let uniforms = uniform! {
+			u_transform: matrix4_to_array(transform),
+			u_scale: [terrain.scale.x, terrain.scale.y, terrain.scale.z],
+			u_map: map.deref(),
+			u_albedo_map: albedo.deref(),
+			u_lod_offset: [node.offset.0 as Real * inv_lod, node.offset.1 as Real * inv_lod],
+			u_lod_scale: 1.0 * inv_lod,
+			u_lines_highlight: 0.0 as Real,
+		};
+
+		let mut draw_parameters = params.draw_parameters.clone();
+
+		draw_parameters.depth = Depth {
+        	test: DepthTest::IfLess,
+        	write: true,
+        	.. Default::default()
+    	};
+
+		target.draw(&self.vertex_buffer, &self.index_buffers[node.seam as usize], &self.shader, &uniforms, &draw_parameters).unwrap();
+
+		draw_parameters.depth = Default::default();
+
+   		draw_parameters.polygon_mode = PolygonMode::Line;
+
+		let uniforms = uniform! {
+			u_transform: matrix4_to_array(transform),
+			u_scale: [terrain.scale.x, terrain.scale.y, terrain.scale.z],
+			u_map: map.deref(),
+			u_albedo_map: albedo.deref(),
+			u_lod_offset: [node.offset.0 as Real * inv_lod, node.offset.1 as Real * inv_lod],
+			u_lod_scale: 1.0 * inv_lod,
+			u_lines_highlight: 1.0 as Real,
+		};
+
+		target.draw(&self.vertex_buffer, &self.index_buffers[node.seam as usize], &self.shader, &uniforms, &draw_parameters).unwrap();
+	}
+
 
 }
