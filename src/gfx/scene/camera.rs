@@ -44,7 +44,7 @@ impl Default for Camera {
 }
 
 #[derive(Copy, Clone)]
-pub struct CameraRenderParameters {
+pub struct CameraRenderParams {
 	pub spatial: Spatial,
 	pub projection_matrix: Matrix4,
 	pub view_matrix: Matrix4,
@@ -54,7 +54,7 @@ pub struct CameraRenderParameters {
 	pub frustum: Frustum,
 }
 
-impl CameraRenderParameters {
+impl CameraRenderParams {
 
 	pub fn new(camera: &Camera, frame_size: (u32, u32)) -> Self {
 
@@ -132,7 +132,7 @@ impl CameraRenderParameters {
 
 		let world_space_frustum = view_matrix * view_space_frustum;
 
-		CameraRenderParameters {
+		CameraRenderParams {
 			spatial: camera.spatial,
 			projection_matrix: projection_matrix,
 			view_matrix: view_matrix,
@@ -160,7 +160,7 @@ mod tests {
 			.. Default::default()
 		};
 
-		let camera_params = CameraRenderParameters::new(&camera, (1, 1));
+		let camera_params = CameraRenderParams::new(&camera, (1, 1));
 		let frustum = camera_params.frustum;
 
 		// test small box

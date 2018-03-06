@@ -3,7 +3,7 @@ use glium::texture::DepthTexture2d;
 use glium::index::PrimitiveType;
 
 use ::gfx::rendering::GBuffer;
-use ::gfx::scene::{Sun, CameraRenderParameters};
+use ::gfx::scene::{Sun, CameraRenderParams};
 use ::math::*;
 
 #[derive(Copy, Clone)]
@@ -203,7 +203,7 @@ impl SunRenderer {
 		target: &mut F, 
 		draw_parameters: &DrawParameters,
 		g_buffer: &GBuffer, 
-		camera: &CameraRenderParameters, 
+		camera: &CameraRenderParams, 
 		sun: &Sun, 
 		shadow_map: &DepthTexture2d, 
 		shadow_map_view_projection_matrix: Matrix4

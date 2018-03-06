@@ -4,9 +4,10 @@ use glium::texture::DepthTexture2d;
 use glium::framebuffer::MultiOutputFrameBuffer;
 
 
-use ::gfx::scene::{Scene, CameraRenderParameters, SunRenderResources, Camera};
-use ::gfx::rendering::{MeshRenderer, TerrainRenderer, GBuffer, RenderParameters, RenderPassType};
+use ::gfx::scene::{Scene, CameraRenderParams, Camera};
+use ::gfx::rendering::{MeshRenderer, GBuffer, RenderParams, RenderPassType};
 use ::gfx::lighting::SunRenderer;
+use ::gfx::terrain::TerrainRenderer;
 use ::math::*;
 
 
@@ -65,14 +66,14 @@ impl Renderer {
 			.. Default::default()
 		};
 
-		let camera = CameraRenderParameters::new(scene.camera(), viewport);
+		let camera = CameraRenderParams::new(scene.camera(), viewport);
 		
 		{
 			let mut target = self.g_buffer.framebuffer(&self.display);
 			target.clear_color(0.0, 0.0, 0.0, 1.0);
 			target.clear_depth(1.0);
 
-			let render_parameters = RenderParameters {
+			let render_parameters = RenderParams {
 				camera: camera,
 				draw_parameters: draw_parameters.clone(),
 				pass_type: RenderPassType::GBuffer,
@@ -96,7 +97,7 @@ impl Renderer {
 				let mut shadow_camera = Camera::ortho(50.0);
 				shadow_camera.spatial.rotation = Quaternion::between_vectors(vec3(0.0, 0.0, -1.0), sun.direction);
 				shadow_camera.spatial.position = -sun.direction.normalize() * 100.0;
-				let shadow_camera_params = CameraRenderParameters::new(&shadow_camera, (1024, 1024));
+				let shadow_camera_params = CameraRenderParams::new(&shadow_camera, (1024, 1024));
 
 				let mut shadow_draw_parameters = draw_parameters.clone();
 				shadow_draw_parameters.viewport = Some(Rect {
@@ -106,7 +107,7 @@ impl Renderer {
 					width: 1024,
 				});
 
-				let shadow_render_parameters = RenderParameters {
+				let shadow_render_parameters = RenderParams {
 					camera: shadow_camera_params,
 					draw_parameters: shadow_draw_parameters,
 					pass_type: RenderPassType::ShadowMap,
@@ -125,7 +126,7 @@ impl Renderer {
 
 	}
 
-	fn draw_scene<Target: Surface>(&self, target: &mut Target, render_parameters: &RenderParameters, scene: &Scene) {
+	fn draw_scene<Target: Surface>(&self, target: &mut Target, render_parameters: &RenderParams, scene: &Scene) {
 		for entity_ref in scene.get_mesh_instances() {
 			self.mesh_renderer.draw_mesh_instance(target, &render_parameters, &entity_ref.0);
 		}

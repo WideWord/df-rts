@@ -12,6 +12,7 @@ impl AABB3 {
 		self.min + (self.max - self.min) * 0.5
 	}
 
+	#[allow(dead_code)]
 	pub fn from_center_size(center: Vector3, size: Vector3) -> AABB3 {
 		let half_size = size * 0.5;
 		AABB3 {

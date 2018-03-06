@@ -4,7 +4,7 @@ use glium::draw_parameters::DepthTest;
 use std::ops::Deref;
 
 use ::gfx::scene::MeshInstance;
-use ::gfx::rendering::{RenderParameters, RenderPassType};
+use ::gfx::rendering::{RenderParams, RenderPassType};
 use ::math::*;
 
 pub struct MeshRenderer {
@@ -87,7 +87,7 @@ impl MeshRenderer {
 		}
 	}
 
-	pub fn draw_mesh_instance<F: Surface>(&self, target: &mut F, params: &RenderParameters, object: &MeshInstance) {
+	pub fn draw_mesh_instance<F: Surface>(&self, target: &mut F, params: &RenderParams, object: &MeshInstance) {
 		let mesh = object.mesh.asset.borrow();
 		let (vertex_buffer, index_buffer) = mesh.get_buffers();
 

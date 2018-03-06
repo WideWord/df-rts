@@ -4,7 +4,8 @@ use glium::draw_parameters::{DepthTest, PolygonMode};
 
 use std::ops::Deref;
 
-use ::gfx::rendering::RenderParameters;
+use ::gfx::rendering::RenderParams;
+use ::gfx::terrain::TerrainRenderTree;
 use ::terrain::Terrain;
 use ::math::*;
 
@@ -216,111 +217,53 @@ impl TerrainRenderer {
 		}
 	}
 
-	pub fn draw_terrain<Target: Surface>(&self, target: &mut Target, params: &RenderParameters, terrain: &Terrain) {
-		println!("\n\nterrain drawing...");
+	pub fn draw_terrain<Target: Surface>(&self, target: &mut Target, params: &RenderParams, terrain: &Terrain) {
 
-		/*struct TerrainNode {
-			pub offset: Vector2,
-			pub scale: Real,
-			pub bounds: AABB3,
-			pub seam_config: u8,
-			pub children: Option<[Box<TerrainNode>; 4]>,
+		let tree = TerrainRenderTree::build(params, terrain);
+
+		for node in tree.draw_iter() {
+			let transform = params.camera.view_projection_matrix;
+
+			let map = terrain.map.asset.borrow();
+			let material = terrain.materials[0].asset.borrow();
+			let albedo = material.albedo_map.asset.borrow();
+
+			let uniforms = uniform! {
+				u_transform: matrix4_to_array(transform),
+				u_scale: [terrain.scale.x, terrain.scale.y, terrain.scale.z],
+				u_map: map.deref(),
+				u_albedo_map: albedo.deref(),
+				u_lod_offset: [node.offset.x, node.offset.y],
+				u_lod_scale: node.scale,
+				u_lines_highlight: 0.0 as Real,
+			};
+
+			let mut draw_parameters = params.draw_parameters.clone();
+
+			draw_parameters.depth = Depth {
+	        	test: DepthTest::IfLess,
+	        	write: true,
+	        	.. Default::default()
+	    	};
+
+			target.draw(&self.vertex_buffer, &self.index_buffers[node.seam_config as usize], &self.shader, &uniforms, &draw_parameters).unwrap();
+
+			draw_parameters.depth = Default::default();
+
+	   		draw_parameters.polygon_mode = PolygonMode::Line;
+
+			let uniforms = uniform! {
+				u_transform: matrix4_to_array(transform),
+				u_scale: [terrain.scale.x, terrain.scale.y, terrain.scale.z],
+				u_map: map.deref(),
+				u_albedo_map: albedo.deref(),
+				u_lod_offset: [node.offset.x, node.offset.y],
+				u_lod_scale: node.scale,
+				u_lines_highlight: 1.0 as Real,
+			};
+
+			target.draw(&self.vertex_buffer, &self.index_buffers[node.seam_config as usize], &self.shader, &uniforms, &draw_parameters).unwrap();
 		}
-
-		let root = TerrainNode {
-			offset: vec2(0.0, 0.0),
-			scale: 1.0,
-			bounds: AABB3 { min: vec3(0.0, 0.0, 0.0), max: terrain.scale },
-			seam_config: 0,
-			children: None,
-		};
-*/
-
-
-		self.draw_terrain_subdivision(target, params, terrain, 
-			vec2(0.0, 0.0), 1.0, AABB3 { min: vec3(0.0, 0.0, 0.0), max: terrain.scale });
-	}
-
-	fn draw_terrain_subdivision<Target: Surface>(&self, target: &mut Target, params: &RenderParameters, terrain: &Terrain, sd_offset: Vector2, sd_scale: Real, sd_bounds: AABB3) {
-		print!("terrain subdiv {:?} {:?}", sd_offset, sd_scale);
-
-		let camera = &params.camera;
-		if sd_scale * terrain.scale.x < 10.0 {
-			self.draw_terrain_lod(target, params, terrain, sd_offset, sd_scale);
-			println!(" drawed");
-		} else if camera.spatial.position.distance2(sd_bounds.center()) > (sd_scale * terrain.scale.x * 1.5).powi(2) {
-			self.draw_terrain_lod(target, params, terrain, sd_offset, sd_scale);
-			println!(" drawed");
-		} else if intersect_frustum_aabb(&camera.frustum, &sd_bounds) != IntersectionTestResult::Outside {
-			println!(" subdivided");
-			let new_sd_scale = sd_scale * 0.5;
-			let sd_bounds_mid_x = sd_bounds.min.x + (sd_bounds.max.x - sd_bounds.min.x) * 0.5;
-			let sd_bounds_mid_z = sd_bounds.min.z + (sd_bounds.max.z - sd_bounds.min.z) * 0.5;
-			self.draw_terrain_subdivision(target, params, terrain, 
-				sd_offset,
-				new_sd_scale, 
-				AABB3 { min: sd_bounds.min, max: vec3(sd_bounds_mid_x, sd_bounds.max.y, sd_bounds_mid_z) });
-
-			self.draw_terrain_subdivision(target, params, terrain, 
-				sd_offset + vec2(new_sd_scale, 0.0), 
-				new_sd_scale, 
-				AABB3 { min: vec3(sd_bounds_mid_x, sd_bounds.min.y, sd_bounds.min.z), max: vec3(sd_bounds.max.x, sd_bounds.max.y, sd_bounds_mid_z) });					
-			
-			self.draw_terrain_subdivision(target, params, terrain, 
-				sd_offset + vec2(0.0, new_sd_scale), 
-				new_sd_scale, 
-				AABB3 { min: vec3(sd_bounds.min.x, sd_bounds.min.y, sd_bounds_mid_z), max: vec3(sd_bounds_mid_x, sd_bounds.max.y, sd_bounds.max.z) });					
-
-			self.draw_terrain_subdivision(target, params, terrain, 
-				sd_offset + vec2(new_sd_scale, new_sd_scale), 
-				new_sd_scale, 
-				AABB3 { min: vec3(sd_bounds_mid_x, sd_bounds.min.y, sd_bounds_mid_z), max: sd_bounds.max });
-		}
-	}
-
-	fn draw_terrain_lod<Target: Surface>(&self, target: &mut Target, params: &RenderParameters, terrain: &Terrain, lod_offset: Vector2, lod_scale: Real) {
-		let transform = params.camera.view_projection_matrix;
-
-		let map = terrain.map.asset.borrow();
-		let material = terrain.materials[0].asset.borrow();
-		let albedo = material.albedo_map.asset.borrow();
-
-		let uniforms = uniform! {
-			u_transform: matrix4_to_array(transform),
-			u_scale: [terrain.scale.x, terrain.scale.y, terrain.scale.z],
-			u_map: map.deref(),
-			u_albedo_map: albedo.deref(),
-			u_lod_offset: [lod_offset.x, lod_offset.y],
-			u_lod_scale: lod_scale,
-			u_lines_highlight: 0.0 as Real,
-		};
-
-		let mut draw_parameters = params.draw_parameters.clone();
-
-		draw_parameters.depth = Depth {
-        	test: DepthTest::IfLess,
-        	write: true,
-        	.. Default::default()
-    	};
-
-		target.draw(&self.vertex_buffer, &self.index_buffers[12], &self.shader, &uniforms, &draw_parameters).unwrap();
-
-		draw_parameters.depth = Default::default();
-
-   		draw_parameters.polygon_mode = PolygonMode::Line;
-
-		let uniforms = uniform! {
-			u_transform: matrix4_to_array(transform),
-			u_scale: [terrain.scale.x, terrain.scale.y, terrain.scale.z],
-			u_map: map.deref(),
-			u_albedo_map: albedo.deref(),
-			u_lod_offset: [lod_offset.x, lod_offset.y],
-			u_lod_scale: lod_scale,
-			u_lines_highlight: 1.0 as Real,
-		};
-
-		target.draw(&self.vertex_buffer, &self.index_buffers[12], &self.shader, &uniforms, &draw_parameters).unwrap();
-
 	}
 
 }
