@@ -86,10 +86,11 @@ impl TerrainRenderer {
 		let mut vertices: Vec<TerrainVertex> = Vec::new();
 
 		let grid_steps: u16 = 8;
-		for x in 0..grid_steps {
-			for y in 0..grid_steps {
-				let sx = (x as Real) / ((grid_steps - 1) as Real);
-				let sy = (y as Real) / ((grid_steps - 1) as Real);
+		let grid_stride = grid_steps + 1;
+		for x in 0..(grid_steps + 1) {
+			for y in 0..(grid_steps + 1) {
+				let sx = (x as Real) / (grid_steps as Real);
+				let sy = (y as Real) / (grid_steps as Real);
 				vertices.push(TerrainVertex {
 					position: [sx, sy],
 				});
@@ -98,12 +99,12 @@ impl TerrainRenderer {
 
 		let mut common_indices: Vec<u16> = Vec::new();
 
-		for x in 2..(grid_steps-1) {
-			for y in 2..(grid_steps-1) {
-				let a = (x - 1) * grid_steps + (y - 1);
-				let b = (x - 1) * grid_steps + (y);
-				let c = (x) * grid_steps + (y);
-				let d = (x) * grid_steps + (y - 1);
+		for x in 2..(grid_steps) {
+			for y in 2..(grid_steps) {
+				let a = (x - 1) * grid_stride + (y - 1);
+				let b = (x - 1) * grid_stride + (y);
+				let c = (x) * grid_stride + (y);
+				let d = (x) * grid_stride + (y - 1);
 				common_indices.push(a);
 				common_indices.push(b);
 				common_indices.push(c);
@@ -120,37 +121,67 @@ impl TerrainRenderer {
 			let mut indices = common_indices.clone();
 
 			for side in 0..4 { // -x, +x, -z, +z
-				if seam_config_id & (1 << side) == 0 {
-					for i in 1..grid_steps {
-						let (a, b, c, d) = match side {
-							0 => (
-								0 * grid_steps + (grid_steps - (i - 1) - 1),
-								0 * grid_steps + (grid_steps - i - 1),
-								1 * grid_steps + (grid_steps - i - 1),
-								1 * grid_steps + (grid_steps - (i - 1) - 1),
-							),
-							1 => (
-								(grid_steps - 1) * grid_steps + (i - 1),
-								(grid_steps - 1) * grid_steps + i,
-								(grid_steps - 2) * grid_steps + i,
-								(grid_steps - 2) * grid_steps + (i - 1),
-							),
-							2 => (
-								(i - 1) * grid_steps + 0,
-								i * grid_steps + 0,
-								i * grid_steps + 1,
-								(i - 1) * grid_steps + 1,
-							),
-							3 => (
-								(grid_steps - (i - 1) - 1) * grid_steps + (grid_steps - 1),
-								(grid_steps - i - 1) * grid_steps + (grid_steps - 1),
-								(grid_steps - i - 1) * grid_steps + (grid_steps - 2),
-								(grid_steps - (i - 1) - 1) * grid_steps + (grid_steps - 2),
-							),
+				let is_higher_lod_seam_side = seam_config_id & (1 << side) != 0;
+				let step_size = if is_higher_lod_seam_side { 2 } else { 1 };
+				let seam_grid_steps = grid_steps / step_size;
+				for j in 1..(seam_grid_steps + 1) {
+					let i = j * step_size;
+					let (a, b, c, d) = match side {
+						0 => (
+							grid_steps - (i - step_size),
+							grid_steps - i,
+							grid_stride + grid_steps - i,
+							grid_stride + grid_steps - (i - step_size),
+						),
+						1 => (
+							(grid_steps) * grid_stride + (i - step_size),
+							(grid_steps) * grid_stride + i,
+							(grid_steps - 1) * grid_stride + i,
+							(grid_steps - 1) * grid_stride + (i - step_size),
+						),
+						2 => (
+							(i - step_size) * grid_stride,
+							i * grid_stride,
+							i * grid_stride + 1,
+							(i - step_size) * grid_stride + 1,
+						),
+						3 => (
+							(grid_steps - (i - step_size)) * grid_stride + (grid_steps),
+							(grid_steps - i) * grid_stride + (grid_steps),
+							(grid_steps - i) * grid_stride + (grid_steps - 1),
+							(grid_steps - (i - step_size)) * grid_stride + (grid_steps - 1),
+						),
+						_ => unreachable!(),
+					};
+
+					if is_higher_lod_seam_side {
+
+						let e = match side {
+							0 => grid_stride + grid_steps - i + 1,
+							1 => (grid_steps - 1) * grid_stride + (i - 1),
+							2 => (i - 1) * grid_stride + 1,
+							3 => (grid_steps - (i - 1)) * grid_stride + (grid_steps - 1),
 							_ => unreachable!(),
 						};
 
-						if i == grid_steps - 1 {
+						indices.push(a);
+						indices.push(b);
+						indices.push(e);
+						
+						indices.push(b);
+						indices.push(c);
+						indices.push(e);
+						
+						if i > 1 {
+							indices.push(a);
+							indices.push(e);
+							indices.push(d);
+						}
+						
+
+					} else {
+
+						if i == seam_grid_steps  {
 							indices.push(a);
 							indices.push(b);
 							indices.push(d);
@@ -158,6 +189,7 @@ impl TerrainRenderer {
 							indices.push(a);
 							indices.push(b);
 							indices.push(c);
+
 							if i > 1 {
 								indices.push(a);
 								indices.push(c);
@@ -166,7 +198,6 @@ impl TerrainRenderer {
 						}
 					}
 				}
-				
 			}
 
 			index_buffers.push(IndexBuffer::new(
@@ -187,6 +218,24 @@ impl TerrainRenderer {
 
 	pub fn draw_terrain<Target: Surface>(&self, target: &mut Target, params: &RenderParameters, terrain: &Terrain) {
 		println!("\n\nterrain drawing...");
+
+		/*struct TerrainNode {
+			pub offset: Vector2,
+			pub scale: Real,
+			pub bounds: AABB3,
+			pub seam_config: u8,
+			pub children: Option<[Box<TerrainNode>; 4]>,
+		}
+
+		let root = TerrainNode {
+			offset: vec2(0.0, 0.0),
+			scale: 1.0,
+			bounds: AABB3 { min: vec3(0.0, 0.0, 0.0), max: terrain.scale },
+			seam_config: 0,
+			children: None,
+		};
+*/
+
 
 		self.draw_terrain_subdivision(target, params, terrain, 
 			vec2(0.0, 0.0), 1.0, AABB3 { min: vec3(0.0, 0.0, 0.0), max: terrain.scale });
@@ -254,13 +303,9 @@ impl TerrainRenderer {
         	.. Default::default()
     	};
 
-		target.draw(&self.vertex_buffer, &self.index_buffers[0], &self.shader, &uniforms, &draw_parameters).unwrap();
+		target.draw(&self.vertex_buffer, &self.index_buffers[12], &self.shader, &uniforms, &draw_parameters).unwrap();
 
-		draw_parameters.depth = Depth {
-        	test: DepthTest::IfLessOrEqual,
-        	write: true,
-        	.. Default::default()
-    	};
+		draw_parameters.depth = Default::default();
 
    		draw_parameters.polygon_mode = PolygonMode::Line;
 
@@ -274,7 +319,7 @@ impl TerrainRenderer {
 			u_lines_highlight: 1.0 as Real,
 		};
 
-		target.draw(&self.vertex_buffer, &self.index_buffers[0], &self.shader, &uniforms, &draw_parameters).unwrap();
+		target.draw(&self.vertex_buffer, &self.index_buffers[12], &self.shader, &uniforms, &draw_parameters).unwrap();
 
 	}
 
