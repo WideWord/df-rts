@@ -1,6 +1,6 @@
 use glium::{Program, Display, Surface, VertexBuffer, IndexBuffer, Depth};
 use glium::index::PrimitiveType;
-use glium::draw_parameters::DepthTest;
+use glium::draw_parameters::{DepthTest, PolygonMode};
 
 use std::ops::Deref;
 
@@ -18,7 +18,7 @@ implement_vertex!(TerrainVertex, position);
 pub struct TerrainRenderer {
 	shader: Program,
 	vertex_buffer: VertexBuffer<TerrainVertex>,
-	index_buffer: IndexBuffer<u16>,
+	index_buffers: Vec<IndexBuffer<u16>>,
 }
 
 impl TerrainRenderer {
@@ -66,25 +66,26 @@ impl TerrainRenderer {
 			in vec3 v_normal;
 
 			uniform sampler2D u_albedo_map;
-			uniform float debug_culled_off;
+			uniform float u_lines_highlight;
 
 			out vec4 o_albedo_metallic;
 			out vec4 o_normal_roughness;
+			out vec4 o_emission;
 
 			void main() {
 				vec3 packed_normal = (normalize(v_normal) + vec3(1.0)) * 0.5;
 				vec3 albedo = texture(u_albedo_map, v_uv).rgb;
 				o_albedo_metallic = vec4(albedo, 0.0);
 				o_normal_roughness = vec4(packed_normal, 1.0);
+				o_emission = vec4(1.0, 0.0, 0.0, 1.0) * u_lines_highlight;
 			}
 		"#;
 
 		let shader = Program::from_source(display, vertex_shader_src, fragment_shader_src, None).unwrap();
 
 		let mut vertices: Vec<TerrainVertex> = Vec::new();
-		let mut indices: Vec<u16> = Vec::new();
 
-		let grid_steps: u16 = 64;
+		let grid_steps: u16 = 8;
 		for x in 0..grid_steps {
 			for y in 0..grid_steps {
 				let sx = (x as Real) / ((grid_steps - 1) as Real);
@@ -92,32 +93,95 @@ impl TerrainRenderer {
 				vertices.push(TerrainVertex {
 					position: [sx, sy],
 				});
-				if x > 0 && y > 0 {
-					let a = (x - 1) * grid_steps + (y - 1);
-					let b = (x - 1) * grid_steps + (y);
-					let c = (x) * grid_steps + (y);
-					let d = (x) * grid_steps + (y - 1);
-					indices.push(a);
-					indices.push(b);
-					indices.push(c);
-					indices.push(a);
-					indices.push(c);
-					indices.push(d);
-				}
 			}
 		}
 
+		let mut common_indices: Vec<u16> = Vec::new();
+
+		for x in 2..(grid_steps-1) {
+			for y in 2..(grid_steps-1) {
+				let a = (x - 1) * grid_steps + (y - 1);
+				let b = (x - 1) * grid_steps + (y);
+				let c = (x) * grid_steps + (y);
+				let d = (x) * grid_steps + (y - 1);
+				common_indices.push(a);
+				common_indices.push(b);
+				common_indices.push(c);
+				common_indices.push(a);
+				common_indices.push(c);
+				common_indices.push(d);
+			}
+		}
+
+		let mut index_buffers: Vec<IndexBuffer<u16>> = Vec::new();
+
+		// setted bit means a seam to higher level lod at the corresponding side
+		for seam_config_id in 0..16 {
+			let mut indices = common_indices.clone();
+
+			for side in 0..4 { // -x, +x, -z, +z
+				if seam_config_id & (1 << side) == 0 {
+					for i in 1..grid_steps {
+						let (a, b, c, d) = match side {
+							0 => (
+								0 * grid_steps + (grid_steps - (i - 1) - 1),
+								0 * grid_steps + (grid_steps - i - 1),
+								1 * grid_steps + (grid_steps - i - 1),
+								1 * grid_steps + (grid_steps - (i - 1) - 1),
+							),
+							1 => (
+								(grid_steps - 1) * grid_steps + (i - 1),
+								(grid_steps - 1) * grid_steps + i,
+								(grid_steps - 2) * grid_steps + i,
+								(grid_steps - 2) * grid_steps + (i - 1),
+							),
+							2 => (
+								(i - 1) * grid_steps + 0,
+								i * grid_steps + 0,
+								i * grid_steps + 1,
+								(i - 1) * grid_steps + 1,
+							),
+							3 => (
+								(grid_steps - (i - 1) - 1) * grid_steps + (grid_steps - 1),
+								(grid_steps - i - 1) * grid_steps + (grid_steps - 1),
+								(grid_steps - i - 1) * grid_steps + (grid_steps - 2),
+								(grid_steps - (i - 1) - 1) * grid_steps + (grid_steps - 2),
+							),
+							_ => unreachable!(),
+						};
+
+						if i == grid_steps - 1 {
+							indices.push(a);
+							indices.push(b);
+							indices.push(d);
+						} else {
+							indices.push(a);
+							indices.push(b);
+							indices.push(c);
+							if i > 1 {
+								indices.push(a);
+								indices.push(c);
+								indices.push(d);
+							}
+						}
+					}
+				}
+				
+			}
+
+			index_buffers.push(IndexBuffer::new(
+				display,
+				PrimitiveType::TrianglesList,
+	            &indices
+			).unwrap());
+		}
+
 		let vertex_buffer = VertexBuffer::new(display, &vertices).unwrap();
-		let index_buffer = IndexBuffer::new(
-			display,
-			PrimitiveType::TrianglesList,
-            &indices
-        ).unwrap();
 
 		TerrainRenderer {
 			shader: shader,
 			vertex_buffer: vertex_buffer,
-			index_buffer: index_buffer,
+			index_buffers: index_buffers,
 		}
 	}
 
@@ -132,7 +196,7 @@ impl TerrainRenderer {
 		print!("terrain subdiv {:?} {:?}", sd_offset, sd_scale);
 
 		let camera = &params.camera;
-		if sd_scale * terrain.scale.x < 5.0 {
+		if sd_scale * terrain.scale.x < 10.0 {
 			self.draw_terrain_lod(target, params, terrain, sd_offset, sd_scale);
 			println!(" drawed");
 		} else if camera.spatial.position.distance2(sd_bounds.center()) > (sd_scale * terrain.scale.x * 1.5).powi(2) {
@@ -179,6 +243,7 @@ impl TerrainRenderer {
 			u_albedo_map: albedo.deref(),
 			u_lod_offset: [lod_offset.x, lod_offset.y],
 			u_lod_scale: lod_scale,
+			u_lines_highlight: 0.0 as Real,
 		};
 
 		let mut draw_parameters = params.draw_parameters.clone();
@@ -189,7 +254,28 @@ impl TerrainRenderer {
         	.. Default::default()
     	};
 
-		target.draw(&self.vertex_buffer, &self.index_buffer, &self.shader, &uniforms, &draw_parameters).unwrap();
+		target.draw(&self.vertex_buffer, &self.index_buffers[0], &self.shader, &uniforms, &draw_parameters).unwrap();
+
+		draw_parameters.depth = Depth {
+        	test: DepthTest::IfLessOrEqual,
+        	write: true,
+        	.. Default::default()
+    	};
+
+   		draw_parameters.polygon_mode = PolygonMode::Line;
+
+		let uniforms = uniform! {
+			u_transform: matrix4_to_array(transform),
+			u_scale: [terrain.scale.x, terrain.scale.y, terrain.scale.z],
+			u_map: map.deref(),
+			u_albedo_map: albedo.deref(),
+			u_lod_offset: [lod_offset.x, lod_offset.y],
+			u_lod_scale: lod_scale,
+			u_lines_highlight: 1.0 as Real,
+		};
+
+		target.draw(&self.vertex_buffer, &self.index_buffers[0], &self.shader, &uniforms, &draw_parameters).unwrap();
+
 	}
 
 }

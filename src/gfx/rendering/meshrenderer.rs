@@ -50,11 +50,13 @@ impl MeshRenderer {
 
 					out vec4 o_albedo_metallic;
 					out vec4 o_normal_roughness;
+					out vec4 o_emission;
 
 					void main() {
 						vec3 packed_normal = (v_normal + vec3(1.0)) * 0.5;
 						o_albedo_metallic = vec4(texture(u_albedo_map, v_uv).rgb, texture(u_metallic_map, v_uv).r);
 						o_normal_roughness = vec4(packed_normal, texture(u_roughness_map, v_uv).r);
+						o_emission = vec4(0.0);
 					}
 				"#;
 

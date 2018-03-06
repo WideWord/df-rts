@@ -43,6 +43,7 @@ impl SunRenderer {
 
 			uniform sampler2D u_albedo_metallic_map;
 			uniform sampler2D u_normal_roughness_map;
+			uniform sampler2D u_emission_map;
 			uniform sampler2D u_depth_map;
 			uniform vec3 u_sun_direction;
 			uniform vec3 u_sun_color;
@@ -140,6 +141,7 @@ impl SunRenderer {
 			void main() {
 				vec4 albedo_metallic = texture(u_albedo_metallic_map, v_position);
 				vec4 normal_roughness = texture(u_normal_roughness_map, v_position);
+				vec4 emission = texture(u_emission_map, v_position);
 
 				vec3 albedo = albedo_metallic.rgb;
 				float metallic = albedo_metallic.a;
@@ -154,7 +156,7 @@ impl SunRenderer {
 				vec3 N = normalize(normal);
 				vec3 V = normalize(u_camera_position - position);
 				
-				vec3 result = pbr_lighting(albedo, metallic, roughness, N, L, V, u_sun_color);
+				vec3 light = pbr_lighting(albedo, metallic, roughness, N, L, V, u_sun_color);
 
 				vec3 shadow_map_coord = ((u_shadow_map_view_projection_matrix * vec4(position, 1.0)).xyz + vec3(1.0)) * 0.5;
 				float lighted_surface_dist = texture(u_shadow_map, shadow_map_coord.xy).r;
@@ -165,7 +167,7 @@ impl SunRenderer {
 				|| shadow_map_coord.y > 1.0
 				|| shadow_map_coord.y < 0.0 ? 1.0 : 0.0);
 
-				color = vec4(result * shadow, 1);
+				color = vec4(light * shadow + emission.rgb, 1);
 			}
 		"#;
 
@@ -210,6 +212,7 @@ impl SunRenderer {
 		let uniforms = uniform! {
 			u_albedo_metallic_map: g_buffer.albedo_metallic_texture(),
 			u_normal_roughness_map: g_buffer.normal_roughness_texture(),
+			u_emission_map: g_buffer.emission_texture(),
 			u_depth_map: g_buffer.depth_texture(),
 			u_sun_direction: [sun.direction.x, sun.direction.y, sun.direction.z],
 			u_sun_color: [sun.color.x, sun.color.y, sun.color.z],
