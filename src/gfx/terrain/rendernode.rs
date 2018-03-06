@@ -38,34 +38,7 @@ impl RenderNode {
 			
 				let is_node_small = terrain.scale.x / (node.lod as Real) * 1.2 < camera.spatial.position.distance(node.bounds(terrain).center());
 
-				let mut is_node_can_be_subdivided = true;
-				for j in &result {
-
-					if j.lod * 2 != node.lod { continue }
-
-					let dx = -((j.offset.0 * 2) as i16) + (node.offset.0 as i16);
-					let dz = -((j.offset.1 * 2) as i16) + (node.offset.1 as i16);
-
-					if dz == 0 || dz == 1 {
-						if dx == -1 {
-							node.seam |= 2;
-							is_node_can_be_subdivided = false;
-						} else if dx == 2 {
-							node.seam |= 1;
-							is_node_can_be_subdivided = false;
-						}
-					} else if dx == 0 || dx == 1 {
-						if dz == -1 {
-							node.seam |= 3;
-							is_node_can_be_subdivided = false;
-						} else if dz == 2 {
-							node.seam |= 4;
-							is_node_can_be_subdivided = false;
-						}
-					}
-				}
-
-				if !is_node_can_be_subdivided || is_node_small  {
+				if is_node_small  {
 					result.push(node);		
 				} else {
 					let lod = node.lod * 2;
