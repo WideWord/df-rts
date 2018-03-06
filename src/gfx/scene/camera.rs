@@ -51,30 +51,57 @@ pub struct CameraRenderParameters {
 	pub view_projection_matrix: Matrix4,
 	pub inverse_view_matrix: Matrix4,
 	pub inverse_projection_matrix: Matrix4,
+	//pub frustum: Frustum,
 }
 
 impl CameraRenderParameters {
 
 	pub fn new(camera: &Camera, frame_size: (u32, u32)) -> Self {
-		let projection = match camera.projection {
-			CameraProjection::Ortho => {
-				let ys = camera.size_y * 0.5;
-				let xs = ys / (frame_size.1 as Real) * (frame_size.0 as Real) * 0.5;
-				ortho(xs, -xs, -ys, ys, camera.z_near, camera.z_far)
-			}
-			CameraProjection::Perspective => perspective(camera.fov_y, (frame_size.0 as Real) / (frame_size.1 as Real), camera.z_near, camera.z_far),
+
+		let aspect_ratio = (frame_size.0 as Real) / (frame_size.1 as Real);
+
+		let projection_matrix = {
+			let mut matrix = match camera.projection {
+				CameraProjection::Ortho => {
+					let ys = camera.size_y * 0.5;
+					let xs = ys * aspect_ratio * 0.5;
+					ortho(xs, -xs, -ys, ys, camera.z_near, camera.z_far)
+				}
+				CameraProjection::Perspective => perspective(camera.fov_y, (frame_size.0 as Real) / (frame_size.1 as Real), camera.z_near, camera.z_far)
+			};
+
+			// By default cgmath builds left-handed projection matrix
+			// convert it to right-handed
+			matrix[2][2] = -matrix[2][2];
+			matrix[2][3] = -matrix[2][3];
+
+			matrix
 		};
 
-		let view = camera.spatial.inverse_transform_matrix();
-		let view_projection = projection * view;
+		let view_matrix = camera.spatial.inverse_transform_matrix();
+		let view_projection_matrix = projection_matrix * view_matrix;
+
+		/*let frustum = match camera.projection {
+			CameraProjection::Perspective => {
+				let fov_y_tan = camera.fov_y.tan();
+				let v_far = fov_y_tan * camera.z_far;
+				let h_far = v_far * aspect_ratio;
+				let v_near = fov_y_tan * camera.z_near;	
+				let h_near = v_near * aspect_ratio;
+
+			}
+			CameraProjection::Ortho => {
+				unimplemented!();
+			}
+		};*/
 
 		CameraRenderParameters {
 			spatial: camera.spatial,
-			projection_matrix: projection,
-			view_matrix: view,
-			view_projection_matrix: view_projection,
-			inverse_view_matrix: view.inverse_transform().unwrap(),
-			inverse_projection_matrix: projection.inverse_transform().unwrap(),
+			projection_matrix: projection_matrix,
+			view_matrix: view_matrix,
+			view_projection_matrix: view_projection_matrix,
+			inverse_view_matrix: view_matrix.inverse_transform().unwrap(),
+			inverse_projection_matrix: projection_matrix.inverse_transform().unwrap(),
 		}
 	}
 

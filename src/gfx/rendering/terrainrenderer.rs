@@ -51,7 +51,7 @@ impl TerrainRenderer {
     			float s12 = texture(u_map, position + vec2(0, step)).x;
     			vec3 va = normalize(vec3(u_scale.x / 32, (s21 - s01) * u_scale.y, 0.0));
     			vec3 vb = normalize(vec3(0.0, (s12 - s10) * u_scale.y, u_scale.z / 32));
-    			v_normal = (-cross(va, vb) + vec3(1, 1, 1)) * 0.5;
+    			v_normal = -cross(va, vb);
 			}
 		"#;
 
@@ -61,14 +61,15 @@ impl TerrainRenderer {
 			in vec2 v_uv;
 			in vec3 v_normal;
 
-			uniform sampler2D u_albedo;
+			uniform sampler2D u_albedo_map;
 
-			out vec4 o_albedo;
-			out vec4 o_normal;
+			out vec4 o_albedo_metallic;
+			out vec4 o_normal_roughness;
 
 			void main() {
-				o_albedo = texture(u_albedo, v_uv);
-				o_normal = vec4(v_normal, 1.0);
+				vec3 packed_normal = (normalize(v_normal) + vec3(1.0)) * 0.5;
+				o_albedo_metallic = vec4(texture(u_albedo_map, v_uv).rgb, 0.0);
+				o_normal_roughness = vec4(packed_normal, 0.5);
 			}
 		"#;
 
@@ -125,7 +126,7 @@ impl TerrainRenderer {
 			u_transform: matrix4_to_array(transform),
 			u_scale: [terrain.scale.x, terrain.scale.y, terrain.scale.z],
 			u_map: map.deref(),
-			u_albedo: albedo.deref(),
+			u_albedo_map: albedo.deref(),
 		};
 
 		let mut draw_parameters = params.draw_parameters.clone();

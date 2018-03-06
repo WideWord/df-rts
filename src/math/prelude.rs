@@ -7,7 +7,7 @@ pub type Vector3 = cgmath::Vector3<Real>;
 pub type Quaternion = cgmath::Quaternion<Real>;
 pub type Matrix3 = cgmath::Matrix3<Real>;
 pub type Matrix4 = cgmath::Matrix4<Real>;
-pub use cgmath::{vec2, vec3, vec4, Rad, Deg};
+pub use cgmath::{vec2, vec3, vec4, Rad, Deg, dot};
 pub use cgmath::prelude::*;
 
 pub fn matrix4_to_array(transform: Matrix4) -> [[Real; 4]; 4] {

@@ -200,11 +200,11 @@ impl SunRenderer {
 		&self, 
 		target: &mut F, 
 		draw_parameters: &DrawParameters,
-		 g_buffer: &GBuffer, 
-		 camera: &CameraRenderParameters, 
-		 sun: &Sun, 
-		 shadow_map: &DepthTexture2d, 
-		 shadow_map_view_projection_matrix: Matrix4
+		g_buffer: &GBuffer, 
+		camera: &CameraRenderParameters, 
+		sun: &Sun, 
+		shadow_map: &DepthTexture2d, 
+		shadow_map_view_projection_matrix: Matrix4
 	) {
 
 		let uniforms = uniform! {

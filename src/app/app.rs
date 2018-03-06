@@ -57,33 +57,63 @@ impl App {
 			let white = load_texture(self.renderer.get_display(), PathBuf::from("data/white.png").as_path());
 			let black = load_texture(self.renderer.get_display(), PathBuf::from("data/black.png").as_path());
 			let gray = load_texture(self.renderer.get_display(), PathBuf::from("data/gray.png").as_path());
+			{
+				let material = Asset::asset(Material {
+					albedo_map: sand.clone(),
+					roughness_map: gray.clone(),
+					metallic_map: white.clone(),
+				});
 
-			let material = Asset::asset(Material {
-				albedo_map: sand.clone(),
-				roughness_map: gray.clone(),
-				metallic_map: white.clone(),
-			});
+				let mesh = load_mesh(self.renderer.get_display(), PathBuf::from("data/monkey.dae").as_path(), material.clone());
 
-			let mesh = load_mesh(self.renderer.get_display(), PathBuf::from("data/plane.dae").as_path(), material.clone());
+				let instance = MeshInstance {
+					spatial: Spatial::identity(),
+					is_static: false,
+					mesh: mesh,
+				};
 
-			let instance = MeshInstance {
-				spatial: Spatial::identity(),
-				is_static: false,
-				mesh: mesh,
-			};
+				scene.add_mesh_instance(instance);
+			}
 
-			scene.add_mesh_instance(instance);
-		/*
-			let map = load_texture(self.renderer.get_display(), PathBuf::from("data/terrain.png").as_path());
+			{
+				let material = Asset::asset(Material {
+					albedo_map: sand.clone(),
+					roughness_map: gray.clone(),
+					metallic_map: black.clone(),
+				});
 
-			let terrain = Asset::asset(Terrain::new(map));
+				let mesh = load_mesh(self.renderer.get_display(), PathBuf::from("data/monkey.dae").as_path(), material.clone());
 
-			terrain.asset.borrow_mut().materials.push(material.clone());
+				let mut instance = MeshInstance {
+					spatial: Spatial::identity(),
+					is_static: false,
+					mesh: mesh,
+				};
 
-			scene.terrain = Some(terrain);
-*/
+				instance.spatial.position = vec3(2.5, 0.0, 0.0);
+
+				scene.add_mesh_instance(instance);
+			}
+
+			{
+		
+				let material = Asset::asset(Material {
+					albedo_map: sand.clone(),
+					roughness_map: gray.clone(),
+					metallic_map: black.clone(),
+				});
+
+				let map = load_texture(self.renderer.get_display(), PathBuf::from("data/terrain.png").as_path());
+
+				let terrain = Asset::asset(Terrain::new(map));
+
+				terrain.asset.borrow_mut().materials.push(material.clone());
+
+				scene.terrain = Some(terrain);
+			}
+
 			scene.sun = Some(::gfx::scene::Sun {
-				direction: vec3(0.5, -0.5, 0.0),
+				direction: vec3(0.3, -0.3, -1.0),
 				color: vec3(1.0, 1.0, 1.0),
 				render_resources: RefCell::new(None),
 			});
@@ -105,16 +135,16 @@ impl App {
 					let camera = scene.camera_mut();
 					let delta_mouse = self.input.delta_mouse();
 
-					camera.spatial.rotation = Quaternion::from_angle_y(Rad(-delta_mouse.x * 0.01)) * camera.spatial.rotation * Quaternion::from_angle_x(Rad(-delta_mouse.y * 0.01));
+					camera.spatial.rotation = Quaternion::from_angle_y(Rad(delta_mouse.x * 0.01)) * camera.spatial.rotation * Quaternion::from_angle_x(Rad(delta_mouse.y * 0.01));
 				}
 
 				let mut tr = vec3(0.0, 0.0, 0.0);
 				
 				if self.input.is_key_down(input::Key::Forward) {
-					tr += vec3(0.0, 0.0, -1.0);
+					tr += vec3(0.0, 0.0, 1.0);
 				}
 				if self.input.is_key_down(input::Key::Backward) {
-					tr += vec3(0.0, 0.0, 1.0);
+					tr += vec3(0.0, 0.0, -1.0);
 				}
 				if self.input.is_key_down(input::Key::Left) {
 					tr += vec3(-1.0, 0.0, 0.0);
@@ -127,7 +157,7 @@ impl App {
 					let scene_ref = self.graphics_scene.clone().unwrap();
 					let mut scene = scene_ref.borrow_mut();
 					let camera = scene.camera_mut();
-					camera.spatial.position += (camera.spatial.rotation_matrix() * tr) * self.delta_time;
+					camera.spatial.position += (camera.spatial.rotation_matrix() * tr) * self.delta_time * 5.0;
 				}				
 			}
 

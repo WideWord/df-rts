@@ -16,7 +16,7 @@ impl Terrain {
 		Terrain {
 			map: map,
 			materials: Vec::new(),
-			scale: vec3(5.0, 1.0, 5.0),
+			scale: vec3(100.0, 30.0, 100.0),
 		}
 	}
 

@@ -93,7 +93,7 @@ impl Renderer {
 				let mut shadow_map_target = MultiOutputFrameBuffer::with_depth_buffer(&self.display, ::std::iter::empty::<(&str, &Texture2d)>(), &shadow_map).unwrap();
 				shadow_map_target.clear_depth(1.0);
 
-				let mut shadow_camera = Camera::ortho(10.0);
+				let mut shadow_camera = Camera::ortho(50.0);
 				shadow_camera.spatial.rotation = Quaternion::between_vectors(vec3(0.0, 0.0, -1.0), sun.direction);
 				shadow_camera.spatial.position = -sun.direction.normalize() * 100.0;
 				let shadow_camera_params = CameraRenderParameters::new(&shadow_camera, (1024, 1024));

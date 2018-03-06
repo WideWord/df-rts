@@ -34,7 +34,7 @@ impl MeshRenderer {
 						gl_Position = transform * vec4(position, 1.0);
 						v_uv = uv;
 						vec3 world_normal = normal_transform * normalize(normal);
-						v_normal = (world_normal + vec3(1, 1, 1)) * 0.5;
+						v_normal = world_normal;
 					}
 				"#;
 
@@ -48,12 +48,13 @@ impl MeshRenderer {
 					uniform sampler2D u_roughness_map;
 					uniform sampler2D u_metallic_map;
 
-					out vec4 o_albedo;
-					out vec4 o_normal;
+					out vec4 o_albedo_metallic;
+					out vec4 o_normal_roughness;
 
 					void main() {
-						o_albedo = vec4(texture(u_albedo_map, v_uv).rgb, texture(u_metallic_map, v_uv).r);
-						o_normal = vec4(v_normal, texture(u_roughness_map, v_uv).r);
+						vec3 packed_normal = (v_normal + vec3(1.0)) * 0.5;
+						o_albedo_metallic = vec4(texture(u_albedo_map, v_uv).rgb, texture(u_metallic_map, v_uv).r);
+						o_normal_roughness = vec4(packed_normal, texture(u_roughness_map, v_uv).r);
 					}
 				"#;
 

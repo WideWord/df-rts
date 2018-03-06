@@ -27,8 +27,8 @@ impl GBuffer {
 
 	pub fn framebuffer(&self, display: &Display) -> MultiOutputFrameBuffer {
 		let attachments = [
-			("o_albedo", &self.albedo_texture),
-			("o_normal", &self.normal_texture),
+			("o_albedo_metallic", &self.albedo_texture),
+			("o_normal_roughness", &self.normal_texture),
 		];
 
 		let framebuffer = MultiOutputFrameBuffer::with_depth_buffer(display, attachments.iter().cloned(), &self.depth_texture).unwrap();
