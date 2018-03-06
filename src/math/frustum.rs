@@ -1,4 +1,4 @@
- use ::math::{Plane, AABB3, vec3, dot};
+ use ::math::{Plane, AABB3, vec3, dot, Matrix4};
 
 #[derive(Copy, Clone)]
 pub struct Frustum {
@@ -10,13 +10,30 @@ pub struct Frustum {
 	pub far: Plane,
 }
 
+impl ::std::ops::Mul<Frustum> for Matrix4 {
+	type Output = Frustum;
+
+	fn mul(self, frustum: Frustum) -> Frustum {
+		Frustum {
+			left: self * frustum.left,
+			right: self * frustum.right,
+			top: self * frustum.top,
+			bottom: self * frustum.bottom,
+			near: self * frustum.near,
+			far: self * frustum.far,
+		}
+	}
+
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum IntersectionTestResult {
 	Inside,
 	Outside,
 	Intersect,
 }
 
-pub fn rough_intersect_frustum_aabb(frustum: &Frustum, aabb: &AABB3) -> IntersectionTestResult {
+pub fn intersect_frustum_aabb(frustum: &Frustum, aabb: &AABB3) -> IntersectionTestResult {
 	use self::IntersectionTestResult::*;
 	let mut result = Inside;
 

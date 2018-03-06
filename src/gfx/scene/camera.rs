@@ -51,7 +51,7 @@ pub struct CameraRenderParameters {
 	pub view_projection_matrix: Matrix4,
 	pub inverse_view_matrix: Matrix4,
 	pub inverse_projection_matrix: Matrix4,
-	//pub frustum: Frustum,
+	pub frustum: Frustum,
 }
 
 impl CameraRenderParameters {
@@ -81,7 +81,7 @@ impl CameraRenderParameters {
 		let view_matrix = camera.spatial.inverse_transform_matrix();
 		let view_projection_matrix = projection_matrix * view_matrix;
 
-		/*let frustum = match camera.projection {
+		let view_space_frustum = match camera.projection {
 			CameraProjection::Perspective => {
 				let fov_y_tan = camera.fov_y.tan();
 				let v_far = fov_y_tan * camera.z_far;
@@ -89,11 +89,45 @@ impl CameraRenderParameters {
 				let v_near = fov_y_tan * camera.z_near;	
 				let h_near = v_near * aspect_ratio;
 
+				let left = Plane::from_points(vec3(-h_near, -v_near, camera.z_near), vec3(-h_far, v_far, camera.z_far), vec3(-h_near, v_near, camera.z_near));
+				let right = Plane::from_points(vec3(h_near, -v_near, camera.z_near), vec3(h_near, v_near, camera.z_near), vec3(h_far, v_far, camera.z_far));
+				let top = Plane::from_points(vec3(-h_near, v_near, camera.z_near), vec3(h_near, v_near, camera.z_near), vec3(h_far, v_far, camera.z_far));
+				let bottom = Plane::from_points(vec3(-h_near, -v_near, camera.z_near), vec3(h_far, -v_far, camera.z_far), vec3(h_near, -v_near, camera.z_near));
+				let near = Plane::from_points(vec3(-h_near, -v_near, camera.z_near), vec3(h_near, -v_near, camera.z_near), vec3(h_near, v_near, camera.z_near));
+				let far = Plane::from_points(vec3(-h_near, -v_near, camera.z_near), vec3(h_near, -v_near, camera.z_near), vec3(h_near, v_near, camera.z_near));
+				
+				Frustum {
+					left: left,
+					right: right,
+					top: top,
+					bottom: bottom,
+					near: near,
+					far: far,
+				}
 			}
 			CameraProjection::Ortho => {
-				unimplemented!();
+				let v = camera.size_y;
+				let h = v * aspect_ratio;
+
+				let left = Plane::from_points(vec3(-h, -v, camera.z_near), vec3(-h, v, camera.z_far), vec3(-h, v, camera.z_near));
+				let right = Plane::from_points(vec3(h, -v, camera.z_near), vec3(h, v, camera.z_near), vec3(h, v, camera.z_far));
+				let top = Plane::from_points(vec3(-h, v, camera.z_near), vec3(h, v, camera.z_near), vec3(h, v, camera.z_far));
+				let bottom = Plane::from_points(vec3(-h, -v, camera.z_near), vec3(h, -v, camera.z_far), vec3(h, -v, camera.z_near));
+				let near = Plane::from_points(vec3(-h, -v, camera.z_near), vec3(h, -v, camera.z_near), vec3(h, v, camera.z_near));
+				let far = Plane::from_points(vec3(-h, -v, camera.z_near), vec3(h, -v, camera.z_near), vec3(h, v, camera.z_near));
+				
+				Frustum {
+					left: left,
+					right: right,
+					top: top,
+					bottom: bottom,
+					near: near,
+					far: far,
+				}
 			}
-		};*/
+		};
+
+		let world_space_frustum = view_matrix * view_space_frustum;
 
 		CameraRenderParameters {
 			spatial: camera.spatial,
@@ -102,6 +136,7 @@ impl CameraRenderParameters {
 			view_projection_matrix: view_projection_matrix,
 			inverse_view_matrix: view_matrix.inverse_transform().unwrap(),
 			inverse_projection_matrix: projection_matrix.inverse_transform().unwrap(),
+			frustum: world_space_frustum,
 		}
 	}
 

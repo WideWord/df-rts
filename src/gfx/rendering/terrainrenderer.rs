@@ -31,6 +31,9 @@ impl TerrainRenderer {
 
 			uniform mat4 u_transform;
 			uniform vec3 u_scale;
+			uniform vec2 u_lod_offset;
+			uniform float u_lod_scale;
+			uniform vec3 u_world_offset;
 			uniform sampler2D u_map;
 
 			out vec2 v_uv;
@@ -38,17 +41,18 @@ impl TerrainRenderer {
 
 
 			void main() {
-				vec4 map = texture(u_map, position);
-				vec3 terrain_position = vec3(position.x * u_scale.x, map.r * u_scale.y, position.y * u_scale.z);
+				vec2 lod_position = position * u_lod_scale + u_lod_offset;
+				vec4 map = texture(u_map, lod_position);
+				vec3 terrain_position = vec3(lod_position.x * u_scale.x, map.r * u_scale.y, lod_position.y * u_scale.z);
 				gl_Position = u_transform * vec4(terrain_position, 1.0);
 				v_uv = terrain_position.xz;
 
 				float step = 1.0 / 64.0;
 
-				float s01 = texture(u_map, position + vec2(-step, 0)).x;
-    			float s21 = texture(u_map, position + vec2(step, 0)).x;
-    			float s10 = texture(u_map, position + vec2(0, -step)).x;
-    			float s12 = texture(u_map, position + vec2(0, step)).x;
+				float s01 = texture(u_map, lod_position + vec2(-step, 0)).x;
+    			float s21 = texture(u_map, lod_position + vec2(step, 0)).x;
+    			float s10 = texture(u_map, lod_position + vec2(0, -step)).x;
+    			float s12 = texture(u_map, lod_position + vec2(0, step)).x;
     			vec3 va = normalize(vec3(u_scale.x / 32, (s21 - s01) * u_scale.y, 0.0));
     			vec3 vb = normalize(vec3(0.0, (s12 - s10) * u_scale.y, u_scale.z / 32));
     			v_normal = -cross(va, vb);
@@ -116,6 +120,47 @@ impl TerrainRenderer {
 	}
 
 	pub fn draw_terrain<Target: Surface>(&self, target: &mut Target, params: &RenderParameters, terrain: &Terrain) {
+		println!("terrain drawing...");
+
+		self.draw_terrain_subdivision(target, params, terrain, 
+			vec2(0.0, 0.0), 1.0, AABB3 { min: vec3(0.0, 0.0, 0.0), max: terrain.scale });
+	}
+
+	fn draw_terrain_subdivision<Target: Surface>(&self, target: &mut Target, params: &RenderParameters, terrain: &Terrain, sd_offset: Vector2, sd_scale: Real, sd_bounds: AABB3) {
+		println!("terrain subdiv {:?} {:?}", sd_offset, sd_scale);
+
+		let camera = &params.camera;
+		if sd_scale * terrain.scale.x < 5.0 {
+			self.draw_terrain_lod(target, params, terrain, sd_offset, sd_scale);
+		} else if camera.spatial.position.distance2(sd_bounds.center()) > (sd_scale * terrain.scale.x * 1.5).powi(2) {
+			self.draw_terrain_lod(target, params, terrain, sd_offset, sd_scale);
+		} else if intersect_frustum_aabb(&camera.frustum, &sd_bounds) != IntersectionTestResult::Outside {
+			let new_sd_scale = sd_scale * 0.5;
+			let sd_bounds_mid_x = sd_bounds.min.x + (sd_bounds.max.x - sd_bounds.min.x) * 0.5;
+			let sd_bounds_mid_z = sd_bounds.min.z + (sd_bounds.max.z - sd_bounds.min.z) * 0.5;
+			self.draw_terrain_subdivision(target, params, terrain, 
+				sd_offset,
+				new_sd_scale, 
+				AABB3 { min: sd_bounds.min, max: vec3(sd_bounds_mid_x, sd_bounds.max.y, sd_bounds_mid_z) });
+
+			self.draw_terrain_subdivision(target, params, terrain, 
+				sd_offset + vec2(new_sd_scale, 0.0), 
+				new_sd_scale, 
+				AABB3 { min: vec3(sd_bounds_mid_x, sd_bounds.max.y, sd_bounds.min.z), max: vec3(sd_bounds.max.x, sd_bounds.max.y, sd_bounds_mid_z) });					
+			
+			self.draw_terrain_subdivision(target, params, terrain, 
+				sd_offset + vec2(0.0, new_sd_scale), 
+				new_sd_scale, 
+				AABB3 { min: vec3(sd_bounds.min.x, sd_bounds.max.y, sd_bounds_mid_z), max: vec3(sd_bounds_mid_x, sd_bounds.max.y, sd_bounds.max.z) });					
+
+			self.draw_terrain_subdivision(target, params, terrain, 
+				sd_offset + vec2(new_sd_scale, new_sd_scale), 
+				new_sd_scale, 
+				AABB3 { min: vec3(sd_bounds_mid_x, sd_bounds.max.y, sd_bounds_mid_z), max: sd_bounds.max });
+		}
+	}
+
+	fn draw_terrain_lod<Target: Surface>(&self, target: &mut Target, params: &RenderParameters, terrain: &Terrain, lod_offset: Vector2, lod_scale: Real) {
 		let transform = params.camera.view_projection_matrix;
 
 		let map = terrain.map.asset.borrow();
@@ -127,6 +172,8 @@ impl TerrainRenderer {
 			u_scale: [terrain.scale.x, terrain.scale.y, terrain.scale.z],
 			u_map: map.deref(),
 			u_albedo_map: albedo.deref(),
+			u_lod_offset: [lod_offset.x, lod_offset.y],
+			u_lod_scale: lod_scale,
 		};
 
 		let mut draw_parameters = params.draw_parameters.clone();
