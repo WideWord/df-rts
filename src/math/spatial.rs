@@ -8,13 +8,6 @@ pub struct Spatial {
 
 impl Spatial {
 
-	pub fn identity() -> Self {
-		Spatial {
-			position: Vector3::zero(),
-			rotation: Quaternion::one(),
-		}
-	}
-
 	pub fn transform_matrix(&self) -> Matrix4 {
 		Matrix4::from_translation(self.position) * Matrix4::from(self.rotation)
 	}
@@ -29,4 +22,14 @@ impl Spatial {
 
 }
 
+impl Default for Spatial {
+
+	fn default() -> Spatial {
+		Spatial {
+			position: Vector3::zero(),
+			rotation: Quaternion::one(),
+		}
+	}
+
+}
 

@@ -33,7 +33,7 @@ impl Camera {
 impl Default for Camera {
 	fn default() -> Self {
 		Camera {
-			spatial: Spatial::identity(),
+			spatial: Default::default(),
 			z_near: 1.0,
 			z_far: 1000.0,
 			fov_y: Deg(65.0),
@@ -83,18 +83,21 @@ impl CameraRenderParameters {
 
 		let view_space_frustum = match camera.projection {
 			CameraProjection::Perspective => {
-				let fov_y_tan = camera.fov_y.tan();
-				let v_far = fov_y_tan * camera.z_far;
-				let h_far = v_far * aspect_ratio;
-				let v_near = fov_y_tan * camera.z_near;	
+				let perspective_ratio = (camera.fov_y * 0.5).tan();
+
+				let v_near = camera.z_near * perspective_ratio;	
 				let h_near = v_near * aspect_ratio;
+				
+				let v_far = camera.z_far * perspective_ratio;
+				let h_far = v_far * aspect_ratio;
+				
 
 				let left = Plane::from_points(vec3(-h_near, -v_near, camera.z_near), vec3(-h_far, v_far, camera.z_far), vec3(-h_near, v_near, camera.z_near));
 				let right = Plane::from_points(vec3(h_near, -v_near, camera.z_near), vec3(h_near, v_near, camera.z_near), vec3(h_far, v_far, camera.z_far));
-				let top = Plane::from_points(vec3(-h_near, v_near, camera.z_near), vec3(h_near, v_near, camera.z_near), vec3(h_far, v_far, camera.z_far));
-				let bottom = Plane::from_points(vec3(-h_near, -v_near, camera.z_near), vec3(h_far, -v_far, camera.z_far), vec3(h_near, -v_near, camera.z_near));
-				let near = Plane::from_points(vec3(-h_near, -v_near, camera.z_near), vec3(h_near, -v_near, camera.z_near), vec3(h_near, v_near, camera.z_near));
-				let far = Plane::from_points(vec3(-h_near, -v_near, camera.z_near), vec3(h_near, -v_near, camera.z_near), vec3(h_near, v_near, camera.z_near));
+				let top = Plane::from_points(vec3(h_near, v_near, camera.z_near), vec3(-h_near, v_near, camera.z_near), vec3(h_far, v_far, camera.z_far));
+				let bottom = Plane::from_points(vec3(h_near, -v_near, camera.z_near), vec3(h_far, -v_far, camera.z_far), vec3(-h_near, -v_near, camera.z_near));
+				let near = Plane::from_points(vec3(-h_near, -v_near, camera.z_near), vec3(h_near, v_near, camera.z_near), vec3(h_near, -v_near, camera.z_near));
+				let far = Plane::from_points(vec3(-h_far, -v_far, camera.z_far), vec3(h_far, -v_far, camera.z_far), vec3(h_far, v_far, camera.z_far));
 				
 				Frustum {
 					left: left,
@@ -141,3 +144,90 @@ impl CameraRenderParameters {
 	}
 
 }
+
+#[cfg(test)]
+mod tests {
+
+	use super::*;
+
+	#[test]
+	fn test_perspective_frustum() {
+		let camera = Camera {
+			z_near: 1.0,
+			z_far: 1000.0,
+			fov_y: Deg(90.0),
+			projection: CameraProjection::Perspective,
+			.. Default::default()
+		};
+
+		let camera_params = CameraRenderParameters::new(&camera, (1, 1));
+		let frustum = camera_params.frustum;
+
+		assert_eq!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, 0.0, -5.0), vec3(1.0, 1.0, 1.0))
+		), IntersectionTestResult::Outside);
+
+		assert_eq!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, 0.0, 1020.0), vec3(1.0, 1.0, 1.0))
+		), IntersectionTestResult::Outside);
+
+		assert_eq!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(-10.0, 0.0, 5.0), vec3(1.0, 1.0, 1.0))
+		), IntersectionTestResult::Outside);
+
+		assert_eq!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(10.0, 0.0, 5.0), vec3(1.0, 1.0, 1.0))
+		), IntersectionTestResult::Outside);
+
+		assert_eq!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, -10.0, 5.0), vec3(1.0, 1.0, 1.0))
+		), IntersectionTestResult::Outside);
+
+		assert_eq!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, 10.0, 5.0), vec3(1.0, 1.0, 1.0))
+		), IntersectionTestResult::Outside);
+
+		assert!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, 0.0, 5.0), vec3(1.0, 1.0, 1.0))
+		) != IntersectionTestResult::Outside);
+
+		assert!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, 0.0, 1.0), vec3(1.0, 1.0, 1.0))
+		) != IntersectionTestResult::Outside);
+
+		assert!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, 0.0, 1000.0), vec3(1.0, 1.0, 1.0))
+		) != IntersectionTestResult::Outside);
+
+		assert!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(5.0, 0.0, 5.0), vec3(1.0, 1.0, 1.0))
+		) != IntersectionTestResult::Outside);
+
+		assert!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(-5.0, 0.0, 5.0), vec3(1.0, 1.0, 1.0))
+		) != IntersectionTestResult::Outside);
+
+		assert!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, 5.0, 5.0), vec3(1.0, 1.0, 1.0))
+		) != IntersectionTestResult::Outside);
+
+		assert!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, -5.0, 5.0), vec3(1.0, 1.0, 1.0))
+		) != IntersectionTestResult::Outside);
+	}
+
+}
+

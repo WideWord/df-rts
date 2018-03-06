@@ -2,7 +2,7 @@ use cgmath::prelude::*;
 
 use ::math::{Vector3, Matrix4, Real, dot, vec3};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Plane {
 	pub normal: Vector3,
 	pub d: Real,
@@ -14,8 +14,12 @@ impl Plane {
 		let normal = (c - a).cross(b - a).normalize();
 		Plane {
 			normal: normal,
-			d: dot(a, normal),
+			d: -dot(a, normal),
 		}
+	}
+
+	pub fn oriented_distance(&self, point: Vector3) -> Real {
+		dot(self.normal, point) + self.d
 	}
 
 }

@@ -67,7 +67,7 @@ impl App {
 				let mesh = load_mesh(self.renderer.get_display(), PathBuf::from("data/monkey.dae").as_path(), material.clone());
 
 				let instance = MeshInstance {
-					spatial: Spatial::identity(),
+					spatial: Default::default(),
 					is_static: false,
 					mesh: mesh,
 				};
@@ -85,7 +85,7 @@ impl App {
 				let mesh = load_mesh(self.renderer.get_display(), PathBuf::from("data/monkey.dae").as_path(), material.clone());
 
 				let mut instance = MeshInstance {
-					spatial: Spatial::identity(),
+					spatial: Default::default(),
 					is_static: false,
 					mesh: mesh,
 				};
