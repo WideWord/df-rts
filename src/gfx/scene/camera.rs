@@ -163,6 +163,8 @@ mod tests {
 		let camera_params = CameraRenderParameters::new(&camera, (1, 1));
 		let frustum = camera_params.frustum;
 
+		// test small box
+		// ...outside frustum
 		assert_eq!(intersect_frustum_aabb(
 			&frustum, 
 			&AABB3::from_center_size(vec3(0.0, 0.0, -5.0), vec3(1.0, 1.0, 1.0))
@@ -193,40 +195,85 @@ mod tests {
 			&AABB3::from_center_size(vec3(0.0, 10.0, 5.0), vec3(1.0, 1.0, 1.0))
 		), IntersectionTestResult::Outside);
 
+		// ...inside frustum
 		assert!(intersect_frustum_aabb(
 			&frustum, 
 			&AABB3::from_center_size(vec3(0.0, 0.0, 5.0), vec3(1.0, 1.0, 1.0))
 		) != IntersectionTestResult::Outside);
 
-		assert!(intersect_frustum_aabb(
+		// ...at frustum edges
+		assert_eq!(intersect_frustum_aabb(
 			&frustum, 
 			&AABB3::from_center_size(vec3(0.0, 0.0, 1.0), vec3(1.0, 1.0, 1.0))
-		) != IntersectionTestResult::Outside);
+		), IntersectionTestResult::Intersect);
 
-		assert!(intersect_frustum_aabb(
+		assert_eq!(intersect_frustum_aabb(
 			&frustum, 
 			&AABB3::from_center_size(vec3(0.0, 0.0, 1000.0), vec3(1.0, 1.0, 1.0))
-		) != IntersectionTestResult::Outside);
+		), IntersectionTestResult::Intersect);
 
-		assert!(intersect_frustum_aabb(
+		assert_eq!(intersect_frustum_aabb(
 			&frustum, 
 			&AABB3::from_center_size(vec3(5.0, 0.0, 5.0), vec3(1.0, 1.0, 1.0))
-		) != IntersectionTestResult::Outside);
+		), IntersectionTestResult::Intersect);
 
-		assert!(intersect_frustum_aabb(
+		assert_eq!(intersect_frustum_aabb(
 			&frustum, 
 			&AABB3::from_center_size(vec3(-5.0, 0.0, 5.0), vec3(1.0, 1.0, 1.0))
-		) != IntersectionTestResult::Outside);
+		), IntersectionTestResult::Intersect);
 
-		assert!(intersect_frustum_aabb(
+		assert_eq!(intersect_frustum_aabb(
 			&frustum, 
 			&AABB3::from_center_size(vec3(0.0, 5.0, 5.0), vec3(1.0, 1.0, 1.0))
-		) != IntersectionTestResult::Outside);
+		), IntersectionTestResult::Intersect);
+
+		assert_eq!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, -5.0, 5.0), vec3(1.0, 1.0, 1.0))
+		), IntersectionTestResult::Intersect);
+
+		// test long box
+
+		assert_eq!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, 0.0, 5.0), vec3(5000.0, 1.0, 1.0))
+		), IntersectionTestResult::Intersect);
+
+		assert_eq!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, 0.0, 5.0), vec3(1.0, 5000.0, 1.0))
+		), IntersectionTestResult::Intersect);
+
+		assert_eq!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, 0.0, 5.0), vec3(1.0, 1.0, 5000.0))
+		), IntersectionTestResult::Intersect);
+
+		// test flat box
+
+		assert_eq!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, 0.0, 5.0), vec3(5000.0, 5000.0, 1.0))
+		), IntersectionTestResult::Intersect);
+
+		assert_eq!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, 0.0, 5.0), vec3(1.0, 5000.0, 5000.0))
+		), IntersectionTestResult::Intersect);
+
+		assert_eq!(intersect_frustum_aabb(
+			&frustum, 
+			&AABB3::from_center_size(vec3(0.0, 0.0, 5.0), vec3(5000.0, 1.0, 5000.0))
+		), IntersectionTestResult::Intersect);
+
+
+		// test overlapping box
 
 		assert!(intersect_frustum_aabb(
 			&frustum, 
-			&AABB3::from_center_size(vec3(0.0, -5.0, 5.0), vec3(1.0, 1.0, 1.0))
+			&AABB3::from_center_size(vec3(0.0, 0.0, 5.0), vec3(5000.0, 5000.0, 5000.0))
 		) != IntersectionTestResult::Outside);
+
 	}
 
 }

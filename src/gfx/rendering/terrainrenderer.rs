@@ -66,14 +66,16 @@ impl TerrainRenderer {
 			in vec3 v_normal;
 
 			uniform sampler2D u_albedo_map;
+			uniform float debug_culled_off;
 
 			out vec4 o_albedo_metallic;
 			out vec4 o_normal_roughness;
 
 			void main() {
 				vec3 packed_normal = (normalize(v_normal) + vec3(1.0)) * 0.5;
-				o_albedo_metallic = vec4(texture(u_albedo_map, v_uv).rgb, 0.0);
-				o_normal_roughness = vec4(packed_normal, 0.5);
+				vec3 albedo = texture(u_albedo_map, v_uv).rgb;
+				o_albedo_metallic = vec4(albedo, 0.0);
+				o_normal_roughness = vec4(packed_normal, 1.0);
 			}
 		"#;
 
@@ -120,21 +122,24 @@ impl TerrainRenderer {
 	}
 
 	pub fn draw_terrain<Target: Surface>(&self, target: &mut Target, params: &RenderParameters, terrain: &Terrain) {
-		println!("terrain drawing...");
+		println!("\n\nterrain drawing...");
 
 		self.draw_terrain_subdivision(target, params, terrain, 
 			vec2(0.0, 0.0), 1.0, AABB3 { min: vec3(0.0, 0.0, 0.0), max: terrain.scale });
 	}
 
 	fn draw_terrain_subdivision<Target: Surface>(&self, target: &mut Target, params: &RenderParameters, terrain: &Terrain, sd_offset: Vector2, sd_scale: Real, sd_bounds: AABB3) {
-		println!("terrain subdiv {:?} {:?}", sd_offset, sd_scale);
+		print!("terrain subdiv {:?} {:?}", sd_offset, sd_scale);
 
 		let camera = &params.camera;
 		if sd_scale * terrain.scale.x < 5.0 {
 			self.draw_terrain_lod(target, params, terrain, sd_offset, sd_scale);
+			println!(" drawed");
 		} else if camera.spatial.position.distance2(sd_bounds.center()) > (sd_scale * terrain.scale.x * 1.5).powi(2) {
 			self.draw_terrain_lod(target, params, terrain, sd_offset, sd_scale);
+			println!(" drawed");
 		} else if intersect_frustum_aabb(&camera.frustum, &sd_bounds) != IntersectionTestResult::Outside {
+			println!(" subdivided");
 			let new_sd_scale = sd_scale * 0.5;
 			let sd_bounds_mid_x = sd_bounds.min.x + (sd_bounds.max.x - sd_bounds.min.x) * 0.5;
 			let sd_bounds_mid_z = sd_bounds.min.z + (sd_bounds.max.z - sd_bounds.min.z) * 0.5;
@@ -146,17 +151,17 @@ impl TerrainRenderer {
 			self.draw_terrain_subdivision(target, params, terrain, 
 				sd_offset + vec2(new_sd_scale, 0.0), 
 				new_sd_scale, 
-				AABB3 { min: vec3(sd_bounds_mid_x, sd_bounds.max.y, sd_bounds.min.z), max: vec3(sd_bounds.max.x, sd_bounds.max.y, sd_bounds_mid_z) });					
+				AABB3 { min: vec3(sd_bounds_mid_x, sd_bounds.min.y, sd_bounds.min.z), max: vec3(sd_bounds.max.x, sd_bounds.max.y, sd_bounds_mid_z) });					
 			
 			self.draw_terrain_subdivision(target, params, terrain, 
 				sd_offset + vec2(0.0, new_sd_scale), 
 				new_sd_scale, 
-				AABB3 { min: vec3(sd_bounds.min.x, sd_bounds.max.y, sd_bounds_mid_z), max: vec3(sd_bounds_mid_x, sd_bounds.max.y, sd_bounds.max.z) });					
+				AABB3 { min: vec3(sd_bounds.min.x, sd_bounds.min.y, sd_bounds_mid_z), max: vec3(sd_bounds_mid_x, sd_bounds.max.y, sd_bounds.max.z) });					
 
 			self.draw_terrain_subdivision(target, params, terrain, 
 				sd_offset + vec2(new_sd_scale, new_sd_scale), 
 				new_sd_scale, 
-				AABB3 { min: vec3(sd_bounds_mid_x, sd_bounds.max.y, sd_bounds_mid_z), max: sd_bounds.max });
+				AABB3 { min: vec3(sd_bounds_mid_x, sd_bounds.min.y, sd_bounds_mid_z), max: sd_bounds.max });
 		}
 	}
 

@@ -37,11 +37,12 @@ pub fn intersect_frustum_aabb(frustum: &Frustum, aabb: &AABB3) -> IntersectionTe
 	use self::IntersectionTestResult::*;
 	let mut result = Inside;
 
+	//println!("\n\nintersect_frustum_aabb");
+
 	for plane in [&frustum.near, &frustum.far, &frustum.left, &frustum.right, &frustum.top, &frustum.bottom].iter() {
 		let mut n = vec3(0.0, 0.0, 0.0);
 		let mut p = vec3(0.0, 0.0, 0.0);
 
-		// X axis 
 		if plane.normal.x > 0.0 { 
 			n.x = aabb.min.x; 
 			p.x = aabb.max.x; 
@@ -49,7 +50,7 @@ pub fn intersect_frustum_aabb(frustum: &Frustum, aabb: &AABB3) -> IntersectionTe
 			n.x = aabb.max.x; 
 			p.x = aabb.min.x; 
 		} 
-		// Y axis 
+
 		if plane.normal.y > 0.0 { 
 			n.y = aabb.min.y; 
 			p.y = aabb.max.y; 
@@ -57,7 +58,7 @@ pub fn intersect_frustum_aabb(frustum: &Frustum, aabb: &AABB3) -> IntersectionTe
 			n.y = aabb.max.y; 
 			p.y = aabb.min.y; 
 		} 
-		// Z axis 
+
 		if plane.normal.z > 0.0 { 
 			n.z = aabb.min.z; 
 			p.z = aabb.max.z; 
@@ -66,11 +67,13 @@ pub fn intersect_frustum_aabb(frustum: &Frustum, aabb: &AABB3) -> IntersectionTe
 			p.z = aabb.min.z; 
 		}
 
-		if plane.oriented_distance(p) < 0.0 { 
-			println!("considered outside");
+		//println!("plane {:?}, n {:?}, p {:?}", plane, n, p);
+
+		if plane.oriented_distance(p) < 0.0 {
+			//println!("outside");
         	return Outside;
      	} else if plane.oriented_distance(n) <= 0.0 {
-     		println!("considered intersect");
+     		//println!("intersect");
      		result = Intersect;
      	}
 	}
