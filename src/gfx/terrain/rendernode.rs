@@ -7,7 +7,6 @@ use ::gfx::scene::{CameraRenderParams};
 pub struct RenderNode {
 	pub offset: (u16, u16),
 	pub lod: u16,
-	pub seam: u8,
 }
 
 impl RenderNode {
@@ -29,17 +28,16 @@ impl RenderNode {
 		queue.push_back(RenderNode {
 			offset: (0, 0),
 			lod: 1,
-			seam: 0,
 		});
 
-		while let Some(mut node) = queue.pop_front() {
+		while let Some(node) = queue.pop_front() {
 			
 			if intersect_frustum_aabb(&camera.frustum, &node.bounds(terrain)) != IntersectionTestResult::Outside {
-			
-				let is_node_small = terrain.scale.x / (node.lod as Real) * 1.2 < camera.spatial.position.distance(node.bounds(terrain).center());
+				
+				let node_size = terrain.scale.x / (node.lod as Real);
 
-				if is_node_small  {
-					result.push(node);		
+				if node_size < 50.0 || terrain.scale.x / (node.lod as Real) * 1.3 < camera.spatial.position.distance(node.bounds(terrain).center()) {
+					result.push(node);
 				} else {
 					let lod = node.lod * 2;
 					let offset = (node.offset.0 * 2, node.offset.1 * 2);
@@ -47,25 +45,21 @@ impl RenderNode {
 					queue.push_back(RenderNode {
 						lod: lod,
 						offset: offset,
-						seam: 0,
 					});
 
 					queue.push_back(RenderNode {
 						lod: lod,
 						offset: (offset.0 + 1, offset.1),
-						seam: 0,
 					});
 
 					queue.push_back(RenderNode {
 						lod: lod,
 						offset: (offset.0 + 1, offset.1 + 1),
-						seam: 0,
 					});
 
 					queue.push_back(RenderNode {
 						lod: lod,
 						offset: (offset.0, offset.1 + 1),
-						seam: 0,
 					});
 				}
 			}

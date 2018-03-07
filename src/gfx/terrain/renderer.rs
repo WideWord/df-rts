@@ -3,7 +3,6 @@ use glium::index::PrimitiveType;
 use glium::draw_parameters::{DepthTest, PolygonMode};
 
 use std::ops::Deref;
-use std::collections::VecDeque;
 
 use ::gfx::rendering::RenderParams;
 use ::gfx::terrain::RenderNode;
@@ -13,14 +12,15 @@ use ::math::*;
 #[derive(Copy, Clone)]
 struct TerrainVertex {
 	position: [f32; 2],
+	height_offset: f32,
 }
 
-implement_vertex!(TerrainVertex, position);
+implement_vertex!(TerrainVertex, position, height_offset);
 
 pub struct TerrainRenderer {
 	shader: Program,
 	vertex_buffer: VertexBuffer<TerrainVertex>,
-	index_buffers: Vec<IndexBuffer<u16>>,
+	index_buffer: IndexBuffer<u16>,
 }
 
 impl TerrainRenderer {
@@ -30,12 +30,12 @@ impl TerrainRenderer {
 			#version 140
 
 			in vec2 position;
+			in float height_offset;
 
 			uniform mat4 u_transform;
 			uniform vec3 u_scale;
 			uniform vec2 u_lod_offset;
 			uniform float u_lod_scale;
-			uniform vec3 u_world_offset;
 			uniform sampler2D u_map;
 
 			out vec2 v_uv;
@@ -45,7 +45,7 @@ impl TerrainRenderer {
 			void main() {
 				vec2 lod_position = position * u_lod_scale + u_lod_offset;
 				vec4 map = texture(u_map, lod_position);
-				vec3 terrain_position = vec3(lod_position.x * u_scale.x, map.r * u_scale.y, lod_position.y * u_scale.z);
+				vec3 terrain_position = vec3(lod_position.x * u_scale.x, map.r * u_scale.y + height_offset, lod_position.y * u_scale.z);
 				gl_Position = u_transform * vec4(terrain_position, 1.0);
 				v_uv = terrain_position.xz;
 
@@ -85,136 +85,122 @@ impl TerrainRenderer {
 
 		let shader = Program::from_source(display, vertex_shader_src, fragment_shader_src, None).unwrap();
 
-		let mut vertices: Vec<TerrainVertex> = Vec::new();
+		let mut vertices = Vec::<TerrainVertex>::new();
+		let mut indices = Vec::<u16>::new();
 
-		let grid_steps: u16 = 8;
+		let grid_steps: u16 = 32;
 		let grid_stride = grid_steps + 1;
-		for x in 0..(grid_steps + 1) {
-			for y in 0..(grid_steps + 1) {
+		for x in 0..grid_stride {
+			for y in 0..grid_stride {
 				let sx = (x as Real) / (grid_steps as Real);
 				let sy = (y as Real) / (grid_steps as Real);
 				vertices.push(TerrainVertex {
 					position: [sx, sy],
+					height_offset: 0.0,
 				});
-			}
-		}
 
-		let mut common_indices: Vec<u16> = Vec::new();
-
-		for x in 2..(grid_steps) {
-			for y in 2..(grid_steps) {
-				let a = (x - 1) * grid_stride + (y - 1);
-				let b = (x - 1) * grid_stride + (y);
-				let c = (x) * grid_stride + (y);
-				let d = (x) * grid_stride + (y - 1);
-				common_indices.push(a);
-				common_indices.push(b);
-				common_indices.push(c);
-				common_indices.push(a);
-				common_indices.push(c);
-				common_indices.push(d);
-			}
-		}
-
-		let mut index_buffers: Vec<IndexBuffer<u16>> = Vec::new();
-
-		// setted bit means a seam to higher level lod at the corresponding side
-		for seam_config_id in 0..16 {
-			let mut indices = common_indices.clone();
-
-			for side in 0..4 { // -x, +x, -z, +z
-				let is_higher_lod_seam_side = seam_config_id & (1 << side) != 0;
-				let step_size = if is_higher_lod_seam_side { 2 } else { 1 };
-				let seam_grid_steps = grid_steps / step_size;
-				for j in 1..(seam_grid_steps + 1) {
-					let i = j * step_size;
-					let (a, b, c, d) = match side {
-						0 => (
-							grid_steps - (i - step_size),
-							grid_steps - i,
-							grid_stride + grid_steps - i,
-							grid_stride + grid_steps - (i - step_size),
-						),
-						1 => (
-							(grid_steps) * grid_stride + (i - step_size),
-							(grid_steps) * grid_stride + i,
-							(grid_steps - 1) * grid_stride + i,
-							(grid_steps - 1) * grid_stride + (i - step_size),
-						),
-						2 => (
-							(i - step_size) * grid_stride,
-							i * grid_stride,
-							i * grid_stride + 1,
-							(i - step_size) * grid_stride + 1,
-						),
-						3 => (
-							(grid_steps - (i - step_size)) * grid_stride + (grid_steps),
-							(grid_steps - i) * grid_stride + (grid_steps),
-							(grid_steps - i) * grid_stride + (grid_steps - 1),
-							(grid_steps - (i - step_size)) * grid_stride + (grid_steps - 1),
-						),
-						_ => unreachable!(),
-					};
-
-					if is_higher_lod_seam_side {
-
-						let e = match side {
-							0 => grid_stride + grid_steps - i + 1,
-							1 => (grid_steps - 1) * grid_stride + (i - 1),
-							2 => (i - 1) * grid_stride + 1,
-							3 => (grid_steps - (i - 1)) * grid_stride + (grid_steps - 1),
-							_ => unreachable!(),
-						};
-
-						indices.push(a);
-						indices.push(b);
-						indices.push(e);
-						
-						indices.push(b);
-						indices.push(c);
-						indices.push(e);
-						
-						if i > 1 {
-							indices.push(a);
-							indices.push(e);
-							indices.push(d);
-						}
-						
-
-					} else {
-
-						if i == seam_grid_steps  {
-							indices.push(a);
-							indices.push(b);
-							indices.push(d);
-						} else {
-							indices.push(a);
-							indices.push(b);
-							indices.push(c);
-
-							if i > 1 {
-								indices.push(a);
-								indices.push(c);
-								indices.push(d);
-							}
-						}
-					}
+				if x > 0 && y > 0 {
+					let a = (x - 1) * grid_stride + (y - 1);
+					let b = (x - 1) * grid_stride + (y);
+					let c = (x) * grid_stride + (y);
+					let d = (x) * grid_stride + (y - 1);
+					indices.push(a);
+					indices.push(b);
+					indices.push(c);
+					indices.push(a);
+					indices.push(c);
+					indices.push(d);
 				}
 			}
+		}
 
-			index_buffers.push(IndexBuffer::new(
-				display,
-				PrimitiveType::TrianglesList,
-	            &indices
-			).unwrap());
+		for i in 0..grid_stride {
+			let si = (i as Real) / (grid_steps as Real);
+
+			vertices.push(TerrainVertex {
+				position: [si, 0.0],
+				height_offset: -1.0,
+			});
+
+			vertices.push(TerrainVertex {
+				position: [si, 1.0],
+				height_offset: -1.0,
+			});
+
+			vertices.push(TerrainVertex {
+				position: [0.0, si],
+				height_offset: -1.0,
+			});
+
+			vertices.push(TerrainVertex {
+				position: [1.0, si],
+				height_offset: -1.0,
+			});
+
+			if i > 0 {
+				{
+					let a = (i - 1) * grid_stride;
+					let b = (i) * grid_stride;
+					let c = grid_stride * grid_stride + i * 4;
+					let d = grid_stride * grid_stride + (i - 1) * 4;
+					indices.push(a);
+					indices.push(b);
+					indices.push(c);
+					indices.push(a);
+					indices.push(c);
+					indices.push(d);
+				}
+				{
+					let a = (i - 1) * grid_stride + (grid_stride - 1);
+					let b = (i) * grid_stride + (grid_stride - 1);
+					let c = grid_stride * grid_stride + i * 4 + 1;
+					let d = grid_stride * grid_stride + (i - 1) * 4 + 1;
+					indices.push(a);
+					indices.push(b);
+					indices.push(c);
+					indices.push(a);
+					indices.push(c);
+					indices.push(d);
+				}
+				{
+					let a = i - 1;
+					let b = i;
+					let c = grid_stride * grid_stride + i * 4 + 2;
+					let d = grid_stride * grid_stride + (i - 1) * 4 + 2;
+					indices.push(a);
+					indices.push(b);
+					indices.push(c);
+					indices.push(a);
+					indices.push(c);
+					indices.push(d);
+				}
+				{
+					let a = grid_stride * (grid_stride - 1) + i - 1;
+					let b = grid_stride * (grid_stride - 1) + i;
+					let c = grid_stride * grid_stride + i * 4 + 3;
+					let d = grid_stride * grid_stride + (i - 1) * 4 + 3;
+					indices.push(a);
+					indices.push(b);
+					indices.push(c);
+					indices.push(a);
+					indices.push(c);
+					indices.push(d);
+				}
+			}
 		}
 
 		let vertex_buffer = VertexBuffer::new(display, &vertices).unwrap();
 
+		let index_buffer = IndexBuffer::new(
+			display,
+			PrimitiveType::TrianglesList,
+            &indices
+		).unwrap();
+
 		TerrainRenderer {
 			shader: shader,
 			vertex_buffer: vertex_buffer,
-			index_buffers: index_buffers,
+			index_buffer: index_buffer,
 		}
 	}
 
@@ -254,8 +240,8 @@ impl TerrainRenderer {
         	.. Default::default()
     	};
 
-		target.draw(&self.vertex_buffer, &self.index_buffers[node.seam as usize], &self.shader, &uniforms, &draw_parameters).unwrap();
-
+		target.draw(&self.vertex_buffer, &self.index_buffer, &self.shader, &uniforms, &draw_parameters).unwrap();
+/*
 		draw_parameters.depth = Default::default();
 
    		draw_parameters.polygon_mode = PolygonMode::Line;
@@ -270,7 +256,7 @@ impl TerrainRenderer {
 			u_lines_highlight: 1.0 as Real,
 		};
 
-		target.draw(&self.vertex_buffer, &self.index_buffers[node.seam as usize], &self.shader, &uniforms, &draw_parameters).unwrap();
+		target.draw(&self.vertex_buffer, &self.index_buffer, &self.shader, &uniforms, &draw_parameters).unwrap();*/
 	}
 
 

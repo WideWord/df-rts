@@ -1,4 +1,4 @@
-use glium::glutin::{Event, DeviceEvent, ElementState, WindowEvent, MouseButton};
+use glium::glutin::{Event, DeviceEvent, ElementState, WindowEvent, MouseButton, MouseScrollDelta};
 use enum_map::EnumMap;
 
 use ::math::*;
@@ -29,6 +29,7 @@ impl Default for KeyState {
 pub struct Input {
 	key_states: EnumMap<Key, KeyState>,
 	delta_mouse: Vector2,
+	delta_mouse_wheel: Real,
 	is_window_closed: bool,
 }
 
@@ -38,6 +39,7 @@ impl Input {
 		Input {
 			key_states: EnumMap::default(),
 			delta_mouse: vec2(0.0, 0.0),
+			delta_mouse_wheel: 0.0,
 			is_window_closed: false,
 		}
 	}
@@ -75,6 +77,10 @@ impl Input {
 							self.key_states[key] = KeyState::Released;
 						}
 					}
+				},
+				WindowEvent::MouseWheel { delta, .. } => match delta {
+					MouseScrollDelta::LineDelta(_dh, dv) => self.delta_mouse_wheel += dv,
+					MouseScrollDelta::PixelDelta(_dh, dv) => self.delta_mouse_wheel += dv,
 				},
 				WindowEvent::Closed => self.is_window_closed = true,
 				_ => (),

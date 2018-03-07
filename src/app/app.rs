@@ -90,7 +90,8 @@ impl App {
 					mesh: mesh,
 				};
 
-				instance.spatial.position = vec3(2.5, 0.0, 0.0);
+				instance.spatial.position = vec3(10.0, 10.0, 10.0);
+
 
 				scene.add_mesh_instance(instance);
 			}
@@ -113,7 +114,7 @@ impl App {
 			}
 
 			scene.sun = Some(::gfx::scene::Sun {
-				direction: vec3(0.3, -0.3, -1.0),
+				direction: vec3(0.3, -0.8, -0.2),
 				color: vec3(1.0, 1.0, 1.0),
 				render_resources: RefCell::new(None),
 			});

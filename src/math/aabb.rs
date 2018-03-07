@@ -21,9 +21,4 @@ impl AABB3 {
 		}
 	}
 
-	pub fn contains_xz(&self, point: Vector3) -> bool {
-	 	point.x >= self.min.x && point.x <= self.max.x &&
-		point.z >= self.min.z && point.z <= self.max.z
-	}
-
 }
