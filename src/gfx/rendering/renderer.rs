@@ -7,7 +7,7 @@ use glium::framebuffer::MultiOutputFrameBuffer;
 use ::gfx::scene::{Scene, CameraRenderParams, Camera};
 use ::gfx::rendering::{MeshRenderer, GBuffer, RenderParams, RenderPassType};
 use ::gfx::lighting::SunRenderer;
-use ::gfx::terrain::TerrainRenderer;
+use ::gfx::terrain::TessTerrainRenderer;
 use ::math::*;
 
 
@@ -15,7 +15,7 @@ pub struct Renderer {
 	display: Display,
 
 	mesh_renderer: MeshRenderer,
-	terrain_renderer: TerrainRenderer,
+	terrain_renderer: TessTerrainRenderer,
 
 	g_buffer: GBuffer,
 
@@ -33,7 +33,7 @@ impl Renderer {
 		let display = Display::new(window, context, events_loop).unwrap();
 
 		let mesh_renderer = MeshRenderer::new(&display);
-		let terrain_renderer = TerrainRenderer::new(&display);
+		let terrain_renderer = TessTerrainRenderer::new(&display);
 
 		let sun_renderer = SunRenderer::new(&display);
 
